@@ -20,14 +20,16 @@ try {
   lista = Object.entries(m1).filter(([, v]) => v.uf !== 'ZZ').map(([cd, v]) => ({ uf: v.uf.toLowerCase(), cd }));
 }
 
-const out = { dg: null, hg: null, m: {} };
+let prev = { m: {} }; try { prev = JSON.parse(await readFile('data/mun-2t.json', 'utf8')); } catch {}
+const out = { dg: prev.dg || null, hg: prev.hg || null, m: { ...prev.m } };   // mantém o que já tinha; substitui só o que buscar com sucesso
 let ok = 0, falhas = 0;
 const fila = lista.slice();
 async function worker() {
   while (fila.length) {
     const { uf, cd } = fila.shift();
     try {
-      const j = await getJSON(`${BASE}dados/${uf}/${uf}${cd}-c0001-e00${ELE}-u.json`);
+      let j; try { j = await getJSON(`${BASE}dados/${uf}/${uf}${cd}-c0001-e00${ELE}-u.json`); }
+      catch (e1) { await new Promise(r => setTimeout(r, 800)); j = await getJSON(`${BASE}dados/${uf}/${uf}${cd}-c0001-e00${ELE}-u.json`); }
       const cand = {};
       for (const a of j.carg?.[0]?.agr ?? []) for (const p of a.par ?? []) for (const k of p.cand ?? []) cand[k.n] = num(k.vap);
       out.m[cd] = [num(j.s?.st), num(j.s?.ts), num(j.v?.tv), num(j.v?.vv), cand['22'] || 0, cand['13'] || 0];
@@ -36,6 +38,7 @@ async function worker() {
     } catch (e) { falhas++; }
   }
 }
-await Promise.all(Array.from({ length: 40 }, worker));
+await Promise.all(Array.from({ length: 16 }, worker));
+out.ok = ok; out.falhas = falhas; out.quando = new Date().toISOString();
 console.log(`municípios: ${ok} ok, ${falhas} falhas, último carimbo ${out.hg}`);
 if (ok > 0) await writeFile('data/mun-2t.json', JSON.stringify(out));
