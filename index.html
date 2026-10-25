@@ -96,6 +96,14 @@ tr.final td{font-weight:600}
 details summary{cursor:pointer;font-weight:600;font-size:14px}
 button.ghost{font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--fg);padding:4px 10px;border-radius:6px;cursor:pointer}
 button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio);outline-offset:2px}
+
+.uf-table table{min-width:760px}
+.uf-table td.c{color:var(--muted)}
+.uf-table .flavio{color:var(--flavio);font-weight:600}.uf-table .lula{color:var(--lula);font-weight:600}
+.uf-table .mini{display:inline-block;width:64px;height:6px;background:var(--grid);border-radius:3px;vertical-align:middle;overflow:hidden}
+.uf-table .mini i{display:block;height:100%;background:var(--flavio)}
+.uf-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.uf-head select{font:inherit;font-size:13px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
 </style>
 
 </head>
@@ -161,6 +169,14 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
         <div class="legend"><span><i></i>2º turno</span><span><i class="dash"></i>1º turno</span></div></div>
       <div class="plot" id="chart-votes"></div>
     </div>
+  </section>
+
+  <section class="card uf-table" aria-label="Por estado">
+    <div class="uf-head"><h2>Por estado</h2>
+      <label class="note">Ordenar por <select id="uf-sort">
+        <option value="hora">hora de fechamento</option><option value="pst">% apurado</option><option value="uf">UF</option><option value="delta">maior variação vs 1º</option><option value="f">% Flávio</option></select></label></div>
+    <div class="scroll" id="uf-body"><div class="empty">A tabela por estado é preenchida pela coleta automática a partir das 17h. Enquanto isso, a referência do 1º turno já aparece abaixo.</div></div>
+    <p class="note">"Fechou às" é o carimbo do TSE da primeira parcial em que a UF chegou a 100% das seções. Referência do 1º turno: resultado final do TSE por UF (% dos válidos). Horário de Brasília.</p>
   </section>
 
   <section class="tables">
@@ -235,6 +251,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     for(let h=17;h<=24;h++){ const x=sx(h*60); el('line',{x1:x,x2:x,y1:m.t+ih,y2:m.t+ih+4},axis); const tx=el('text',{x,y:H-10,'text-anchor':'middle'},axis); tx.textContent=h===24?'final':h+'h'; }
     el('line',{x1:m.l,x2:W-m.r,y1:m.t+ih,y2:m.t+ih},axis);
     if(opt.zero && y0<0 && y1>0) el('line',{x1:m.l,x2:W-m.r,y1:sy(0),y2:sy(0),stroke:'var(--muted)','stroke-width':1},svg);
+    const labels=[];
     series.forEach(s=>{
       const pts=s.pts.filter(p=>p.y!=null);
       if(!pts.length) return;
@@ -242,8 +259,10 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       el('path',{d,class:'line '+s.cls});
       const last=pts[pts.length-1];
       el('circle',{cx:sx(last.x),cy:sy(last.y),r:4.5,class:'dot '+s.dotCls});
-      if(s.endLabel){ const t=el('text',{x:Math.min(sx(last.x)+7,W-m.r-30),y:sy(last.y)+(s.labelDy||4),class:'lbl'}); t.textContent=s.endLabel(last.y); }
+      if(s.endLabel) labels.push({x:Math.min(sx(last.x)+7,W-m.r-30),y:sy(last.y),txt:s.endLabel(last.y)});
     });
+    labels.sort((a,b)=>a.y-b.y); for(let i=1;i<labels.length;i++){ if(labels[i].y-labels[i-1].y<13) labels[i].y=labels[i-1].y+13; }
+    labels.forEach(L=>{ const t=el('text',{x:L.x,y:L.y+4,class:'lbl'}); t.textContent=L.txt; });
     const cross=el('line',{class:'cross',y1:m.t,y2:m.t+ih});
     host.appendChild(svg);
     const tip=document.createElement('div'); tip.className='tip'; host.appendChild(tip);
@@ -343,6 +362,50 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   let lastWall=null;
   setInterval(()=>{ if(!lastWall) return; const s=Math.round((Date.now()-lastWall)/1000); $('age').textContent='· atualizado há '+(s<60?s+' s':Math.round(s/60)+' min'); },5000);
 
+
+  // ---------- por estado ----------
+  const UF1 = { // 1º turno, % dos válidos (f=Flávio, l=Lula), fonte: TSE via Wikipedia
+    AC:{n:'Acre',f:64.56,l:28.73},AL:{n:'Alagoas',f:40.45,l:54.73},AM:{n:'Amazonas',f:45.00,l:48.23},AP:{n:'Amapá',f:45.67,l:45.71},
+    BA:{n:'Bahia',f:28.53,l:66.17},CE:{n:'Ceará',f:31.27,l:63.29},DF:{n:'Distrito Federal',f:51.31,l:38.11},ES:{n:'Espírito Santo',f:54.78,l:37.76},
+    GO:{n:'Goiás',f:53.60,l:31.06},MA:{n:'Maranhão',f:30.90,l:63.99},MG:{n:'Minas Gerais',f:48.24,l:43.33},MS:{n:'Mato Grosso do Sul',f:58.60,l:34.68},
+    MT:{n:'Mato Grosso',f:65.15,l:29.18},PA:{n:'Pará',f:44.50,l:49.91},PB:{n:'Paraíba',f:33.07,l:61.31},PE:{n:'Pernambuco',f:31.03,l:63.45},
+    PI:{n:'Piauí',f:24.09,l:70.99},PR:{n:'Paraná',f:59.91,l:31.20},RJ:{n:'Rio de Janeiro',f:53.01,l:39.41},RN:{n:'Rio Grande do Norte',f:34.77,l:59.75},
+    RO:{n:'Rondônia',f:67.45,l:25.89},RR:{n:'Roraima',f:71.06,l:22.86},RS:{n:'Rio Grande do Sul',f:55.64,l:35.73},SC:{n:'Santa Catarina',f:66.65,l:25.04},
+    SE:{n:'Sergipe',f:30.63,l:62.75},SP:{n:'São Paulo',f:51.93,l:38.20},TO:{n:'Tocantins',f:50.44,l:43.42},ZZ:{n:'Exterior',f:43.49,l:47.57}
+  };
+  let ufHist = {};   // {uf:[snapshots]}
+  function ufRows(){
+    return Object.keys(UF1).map(uf=>{
+      const list=(ufHist[uf.toLowerCase()]||[]).map(normalize).sort((a,b)=>a.order<b.order?-1:1);
+      const last=list.length?list[list.length-1]:null;
+      const closed=list.find(s=>s.pst>=100);
+      const ref=UF1[uf];
+      return {uf,n:ref.n,ref,last,closed, f:last&&last.tv>0?last.f:null, l:last&&last.tv>0?last.l:null, pst:last?last.pst:0, hora: closed?closed.hg.slice(0,5):null};
+    });
+  }
+  function drawUF(){
+    const rows=ufRows(); const mode=$('uf-sort').value;
+    rows.sort((a,b)=>{
+      if(mode==='uf') return a.uf.localeCompare(b.uf);
+      if(mode==='pst') return b.pst-a.pst||a.uf.localeCompare(b.uf);
+      if(mode==='f') return (b.f??-1)-(a.f??-1);
+      if(mode==='delta') return Math.abs((b.f??b.ref.f)-b.ref.f)-Math.abs((a.f??a.ref.f)-a.ref.f);
+      return (a.hora||'99:99').localeCompare(b.hora||'99:99')||b.pst-a.pst||a.uf.localeCompare(b.uf);
+    });
+    $('uf-body').innerHTML='<table><thead><tr><th>UF</th><th>Fechou às</th><th>Seções</th><th>Flávio</th><th>Lula</th><th>Vantagem</th><th>1º turno (F / L)</th><th>Δ Flávio</th><th>Δ Lula</th><th>Válidos</th></tr></thead><tbody>'+
+      rows.map(r=>{
+        const lead=r.f!=null?r.f-r.l:null, lf=r.f!=null?fmtPP(r.f-r.ref.f):'—', ll=r.l!=null?fmtPP(r.l-r.ref.l):'—';
+        const winner=r.f!=null?(r.f>r.l?'flavio':'lula'):'';
+        return `<tr><td><b>${r.uf}</b> <span class="c">${r.n}</span></td><td class="num">${r.hora||(r.last&&r.pst>0?'apurando':'—')}</td>`+
+          `<td class="num"><span class="mini"><i style="width:${r.pst}%"></i></span> ${fmtPct(r.pst,1)}</td>`+
+          `<td class="num ${winner==='flavio'?'flavio':''}">${r.f!=null?fmtPct(r.f):'—'}</td><td class="num ${winner==='lula'?'lula':''}">${r.l!=null?fmtPct(r.l):'—'}</td>`+
+          `<td class="num">${lead!=null?fmtPP(lead):'—'}</td><td class="num c">${fmtPct(r.ref.f,1)} / ${fmtPct(r.ref.l,1)}</td>`+
+          `<td class="num ${r.f!=null?(r.f-r.ref.f>=0?'delta up':'delta down'):''}">${lf}</td><td class="num ${r.l!=null?(r.l-r.ref.l>=0?'delta up':'delta down'):''}">${ll}</td>`+
+          `<td class="num">${r.last&&r.last.tv>0?fmtInt(r.last.vv):'—'}</td></tr>`;
+      }).join('')+'</tbody></table>';
+  }
+  $('uf-sort').addEventListener('change',drawUF);
+
   // ---------- fonte de dados: TSE ao vivo + histórico gravado pela Action ----------
   const TSE='https://resultados.tse.jus.br/oficial/ele2026/6258/dados/';
   const URL_BR=TSE+'br/br-c0001-e006258-u.json', URL_ZZ=TSE+'zz/zz-c0001-e006258-u.json';
@@ -365,14 +428,23 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     try{ any|=ingest(byId,[flat(await getJSON(URL_BR))]); }catch(e){ $('age').textContent='· TSE indisponível no momento, tentando de novo'; }
     try{ any|=ingest(byIdZZ,[flat(await getJSON(URL_ZZ))]); }catch(e){}
     if(any){ persist(); } apply();
+    // estados: lê as 27 UFs direto do TSE e mescla no histórico local (a Action grava o histórico persistente)
+    try{
+      const res=await Promise.allSettled(Object.keys(UF1).filter(u=>u!=='ZZ').map(async u=>[u.toLowerCase(),flat(await getJSON(TSE+u.toLowerCase()+'/'+u.toLowerCase()+'-c0001-e006258-u.json'))]));
+      res.forEach(r=>{ if(r.status!=='fulfilled')return; const [u,snap]=r.value; const l=ufHist[u]||(ufHist[u]=[]); if(!l.some(h=>h.order===snap.order)){ if(!(l.some(h=>h.pst>=100)&&snap.pst>=100)) l.push(snap); } });
+      ufHist.zz=[...byIdZZ.values()]; drawUF();
+    }catch(e){}
   }
   async function loadHistory(){
     try{ ingest(byId, JSON.parse(localStorage.getItem('apuracao2026-br')||'[]')); ingest(byIdZZ, JSON.parse(localStorage.getItem('apuracao2026-zz')||'[]')); }catch(e){}
     try{ ingest(byId, await getJSON('data/historico-br.json?t='+Date.now())); }catch(e){}
     try{ ingest(byIdZZ, await getJSON('data/historico-zz.json?t='+Date.now())); }catch(e){}
-    apply();
+    try{ const h=await getJSON('data/historico-uf.json?t='+Date.now()); if(h&&typeof h==='object') ufHist=h; }catch(e){}
+    // exterior entra na tabela por estado a partir do próprio ZZ
+    ufHist.zz=[...byIdZZ.values()];
+    apply(); drawUF();
   }
-  render(); loadHistory().then(tick); setInterval(tick,60000); setInterval(loadHistory,300000);
+  render(); drawUF(); loadHistory().then(tick); setInterval(tick,60000); setInterval(loadHistory,300000);
   let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(drawCharts,150);});
 })();
 </script>

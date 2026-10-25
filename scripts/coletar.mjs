@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const ELE = '6258';
 const BASE = `https://resultados.tse.jus.br/oficial/ele2026/${ELE}/dados/`;
+const UFS = ['ac','al','am','ap','ba','ce','df','es','go','ma','mg','ms','mt','pa','pb','pe','pi','pr','rj','rn','ro','rr','rs','sc','se','sp','to'];
 const FONTES = [
   { uf: 'br', arquivo: 'data/historico-br.json' },
   { uf: 'zz', arquivo: 'data/historico-zz.json' },
@@ -39,6 +40,26 @@ for (const f of FONTES) {
       console.log(`${f.uf}: parcial ${snap.hg} gravada (${snap.pst}% das seções)`);
     } else console.log(`${f.uf}: sem parcial nova (${snap.hg})`);
   } catch (e) { console.error(`${f.uf}: falha na coleta: ${e.message}`); }
+}
+// Estados: um snapshot por UF por parcial, tudo em data/historico-uf.json ({uf: [snapshots]}).
+// Para não inflar o arquivo, cada UF guarda só a parcial mais recente de cada percentual de seções distinto
+// e sempre a última; a hora de fechamento é a primeira parcial com pst = 100.
+{
+  const arq = 'data/historico-uf.json';
+  let hist = {};
+  try { hist = JSON.parse(await readFile(arq, 'utf8')); } catch {}
+  const results = await Promise.allSettled(UFS.map(async uf => [uf, flat(await fetchJSON(`${BASE}${uf}/${uf}-c0001-e00${ELE}-u.json`))]));
+  let m = false;
+  for (const r of results) {
+    if (r.status !== 'fulfilled') { console.error(`uf: falha: ${r.reason?.message}`); continue; }
+    const [uf, snap] = r.value;
+    const list = hist[uf] ?? (hist[uf] = []);
+    if (list.some(h => h.order === snap.order)) continue;
+    const done = list.find(h => h.pst >= 100);
+    if (done && snap.pst >= 100) continue;           // já fechou: não acumula repetições
+    list.push(snap); list.sort((a, b) => a.order.localeCompare(b.order)); m = true;
+  }
+  if (m) { await writeFile(arq, JSON.stringify(hist)); mudou = true; console.log('uf: histórico atualizado'); }
 }
 process.exitCode = 0;
 if (mudou) console.log('CHANGED=1');
