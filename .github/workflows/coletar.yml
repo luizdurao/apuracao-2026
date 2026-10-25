@@ -26,9 +26,11 @@ jobs:
           node-version: "22"
       - name: Coletar
         run: node scripts/coletar.mjs
+      - name: Coletar por município
+        run: node scripts/coletar_mun.mjs || true
       - name: Commit do histórico
         run: |
           git config user.name "coletor-tse"
           git config user.email "coletor-tse@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet && echo "sem mudanças" || git commit -m "parcial $(date -u +%Y-%m-%dT%H:%MZ)" && git push
+          git diff --cached --quiet && echo "sem mudanças" || (git commit -m "parcial $(date -u +%Y-%m-%dT%H:%MZ)" && for i in 1 2 3 4 5; do git pull --rebase && git push && break || sleep 10; done)

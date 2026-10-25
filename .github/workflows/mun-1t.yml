@@ -1,0 +1,16 @@
+name: 1º turno por município (bweb)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  agregar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/mun_1t.py
+      - run: |
+          git config user.name "coletor-tse"; git config user.email "coletor-tse@users.noreply.github.com"
+          git add data/mun-1t.json
+          git diff --cached --quiet || (git commit -m "1º turno por município (bweb)" && for i in 1 2 3 4 5; do git pull --rebase && git push && break || sleep 15; done)
