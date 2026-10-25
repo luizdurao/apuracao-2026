@@ -54,6 +54,8 @@ header{display:grid;gap:10px}
 .cand .sub{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)}
 .delta{font-weight:600}
 .delta.up{color:var(--ok)}.delta.down{color:var(--lula)}
+.aviso{display:none;padding:10px 12px;border-radius:8px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));font-size:13px;line-height:1.45}
+.aviso.on{display:block}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .kpi{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;min-width:0}
 .kpi .v{font-size:20px;font-weight:500}
@@ -160,6 +162,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="bar"><i id="b13"></i></div>
       <div class="sub"><span class="num" id="v13">sem votos apurados</span><span id="d13">1º turno: 45,16% · Lula 2022: 50,90%</span></div>
     </div>
+    <div class="aviso" id="aviso"></div>
     <div class="kpis">
       <div class="kpi"><span class="v num" id="k-pst">0,00%</span><span class="l">seções apuradas <span class="num" id="k-sec"></span></span></div>
       <div class="kpi"><span class="v num" id="k-tv">0</span><span class="l">votos totais apurados</span></div>
@@ -379,7 +382,14 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('k-tv').textContent = fmtInt(L?L.tv:0); $('k-vv').textContent = fmtInt(L?L.vv:0);
     $('k-lead').textContent = L? fmtPP(L.f-L.l) : '—';
     $('k-bn').textContent = L? fmtInt(L.vb+L.vn)+' ('+fmtPct((L.vb+L.vn)/L.tv*100,1)+')' : '—';
-    renderZZ(); drawCharts(); drawTables();
+    renderAviso(L); renderZZ(); drawCharts(); drawTables();
+  }
+  function renderAviso(L){
+    const el=$('aviso'); if(!L||L.pst>=20){ el.className='aviso'; el.textContent=''; return; }
+    const ufs=ufRows().filter(r=>r.uf!=='ZZ'&&r.last&&r.last.tv>0).sort((a,b)=>b.last.vv-a.last.vv);
+    const top=ufs.slice(0,5).map(r=>`${r.uf} ${fmtPct(r.pst,1)}`).join(', ');
+    el.className='aviso on';
+    el.innerHTML=`<b>Parcial inicial (${fmtPct(L.pst)} das seções).</b> Os percentuais refletem só os estados que já começaram a transmitir${top?` — ${top}`:''}. A ordem de chegada distorce o placar: em 2022 as primeiras urnas deram Bolsonaro acima de 55% e o resultado final foi 49,10%. As comparações com o 1º turno e com 2022 ganham sentido a partir de uns 30–40% apurados.`;
   }
   const ZZ1 = {f:43.49,l:47.57,fv:143900,lv:157387};
   let zz = null;             // última parcial do exterior (2º turno)
