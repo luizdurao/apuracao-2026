@@ -1,0 +1,34 @@
+name: Coletar parciais do TSE
+
+on:
+  schedule:
+    # Horários em UTC. Apuração: 25/10 17h–23h59 BRT = 20h–02h59 UTC (até a madrugada de 26/10).
+    - cron: "*/5 20-23 25 10 *"
+    - cron: "*/5 0-3 26 10 *"
+    # Totalização final costuma fechar na manhã seguinte: 1 coleta por hora até 16h UTC (13h BRT).
+    - cron: "0 4-16 26 10 *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Coletar
+        run: node scripts/coletar.mjs
+      - name: Commit do histórico
+        run: |
+          git config user.name "coletor-tse"
+          git config user.email "coletor-tse@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet && echo "sem mudanças" || git commit -m "parcial $(date -u +%Y-%m-%dT%H:%MZ)" && git push
