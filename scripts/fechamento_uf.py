@@ -17,14 +17,15 @@ for row in r:
     if row[ix['DS_CARGO_PERGUNTA']].strip().lower() != 'presidente': continue
     key = (row[ix['CD_MUNICIPIO']], row[ix['NR_ZONA']], row[ix['NR_SECAO']])
     if key in seen: continue
-    raw = row[ix['DT_BU_RECEBIDO']].strip()           # "04/10/2026 17:05:10" ou "04/10/2026"
+    raw = row[ix['DT_BU_RECEBIDO']].strip()   # "2026-10-04 18:25:49" (layout 2026) ou "04/10/2026" + HH_BU_RECEBIDO
     t = row[ix['HH_BU_RECEBIDO']].strip() if 'HH_BU_RECEBIDO' in ix else ''
     parts = raw.split()
     d = parts[0] if parts else ''
     if len(parts) > 1 and not t: t = parts[1]
-    if not t or '/' not in d: continue
-    dd, mm, yy = d.split('/')
-    seen[key] = f"{yy}-{mm}-{dd}T{t}"
+    if not t or not d: continue
+    if '/' in d:
+        dd, mm, yy = d.split('/'); d = f"{yy}-{mm}-{dd}"
+    seen[key] = f"{d}T{t}"
 ts = sorted(seen.values()); n = len(ts)
 if n == 0:
     print(json.dumps({"uf": uf, "erro": "nenhuma seção", "amostra": sample})); sys.exit(0)
