@@ -56,6 +56,10 @@ header{display:grid;gap:10px}
 .delta.up{color:var(--ok)}.delta.down{color:var(--lula)}
 .aviso{display:none;padding:10px 12px;border-radius:8px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));font-size:13px;line-height:1.45}
 .aviso.on{display:block}
+.proj{display:grid;gap:10px;padding:12px;border-radius:8px;border:1px dashed var(--line)}
+.proj-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.proj .kpi{border-style:solid}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .kpi{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;min-width:0}
 .kpi .v{font-size:20px;font-weight:500}
@@ -169,6 +173,17 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="kpi"><span class="v num" id="k-vv">0</span><span class="l">votos válidos</span></div>
       <div class="kpi"><span class="v num" id="k-lead">—</span><span class="l">vantagem (p.p. dos válidos)</span></div>
       <div class="kpi"><span class="v num" id="k-bn">—</span><span class="l">brancos + nulos</span></div>
+    </div>
+    <div class="proj" id="proj">
+      <div class="proj-head"><span class="eyebrow">Projeção · estado a estado</span><span class="note" id="proj-meta"></span></div>
+      <div class="proj-grid">
+        <div class="kpi"><span class="v num" id="pj-falta">—</span><span class="l">seções que faltam <span class="num" id="pj-falta-n"></span></span></div>
+        <div class="kpi"><span class="v num" id="pj-votos">—</span><span class="l">votos válidos ainda por apurar (estimativa)</span></div>
+        <div class="kpi"><span class="v num" id="pj-f">—</span><span class="l">Flávio · projeção final</span></div>
+        <div class="kpi"><span class="v num" id="pj-l">—</span><span class="l">Lula · projeção final</span></div>
+        <div class="kpi"><span class="v num" id="pj-need">—</span><span class="l" id="pj-need-l">para virar, precisa dos votos restantes</span></div>
+      </div>
+      <p class="note" id="proj-note">A projeção aplica, em cada estado, a variação já observada em relação ao 1º turno (em estados com pouca apuração, usa a variação média dos demais), ponderada pelo tamanho do eleitorado de cada UF no 1º turno. É uma estimativa estatística simples, não um resultado.</p>
     </div>
   </section>
 
@@ -384,7 +399,34 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('k-tv').textContent = fmtInt(L?L.tv:0); $('k-vv').textContent = fmtInt(L?L.vv:0);
     $('k-lead').textContent = L? fmtPP(L.f-L.l) : '—';
     $('k-bn').textContent = L? fmtInt(L.vb+L.vn)+' ('+fmtPct((L.vb+L.vn)/L.tv*100,1)+')' : '—';
-    renderAviso(L); renderZZ(); drawCharts(); drawTables();
+    renderAviso(L); renderProj(L); renderZZ(); drawCharts(); drawTables();
+  }
+  function renderProj(L){
+    const set=(id,v)=>{$(id).textContent=v;};
+    if(!L){ ['pj-falta','pj-votos','pj-f','pj-l','pj-need'].forEach(i=>set(i,'—')); set('pj-falta-n',''); set('proj-meta','aguardando a apuração'); return; }
+    const faltaSec=L.ts-L.st, faltaPct=100-L.pst;
+    set('pj-falta',fmtPct(faltaPct)); set('pj-falta-n',`(${fmtInt(faltaSec)} de ${fmtInt(L.ts)})`);
+    // estimativa de votos válidos totais: ritmo atual se já há base; senão, válidos do 1º turno
+    const vvTotal = L.pst>=5 ? L.vv/(L.pst/100) : R1_FINAL.vv;
+    const restantes = Math.max(0, vvTotal-L.vv);
+    set('pj-votos','~'+fmtInt(restantes));
+    // projeção estado a estado (base de dois candidatos)
+    const rows=ufRows(); let swings=[], wsum=0;
+    rows.forEach(r=>{ const w=UF1V[r.uf]; if(!w) return; const base=w[0]/(w[0]+w[1])*100; if(r.f!=null && r.pst>=8){ swings.push({sw:r.f-base, w:(w[0]+w[1])*Math.min(1,r.pst/30)}); } });
+    const swAvg = swings.length ? swings.reduce((a,b)=>a+b.sw*b.w,0)/swings.reduce((a,b)=>a+b.w,0) : null;
+    let fProj=0, tot=0, nObs=0;
+    rows.forEach(r=>{ const w=UF1V[r.uf]; if(!w) return; const base=w[0]/(w[0]+w[1])*100; const peso=w[0]+w[1];
+      let share;
+      if(r.f!=null && r.pst>=8){ const k=Math.min(1,(r.pst-8)/50); share = k*r.f + (1-k)*(base+(swAvg??0)); nObs++; }   // mistura: parcial do próprio estado ganha peso conforme apura
+      else share = base + (swAvg??0);
+      share=Math.max(0,Math.min(100,share)); fProj+=share*peso; tot+=peso; });
+    fProj = tot? fProj/tot : null;
+    if(fProj==null || swAvg==null){ set('pj-f','—'); set('pj-l','—'); set('proj-meta','projeção disponível quando algum estado passar de 8% apurado'); }
+    else { set('pj-f',fmtPct(fProj)); set('pj-l',fmtPct(100-fProj)); set('proj-meta',`${nObs} estado(s) com apuração própria · variação média observada vs 1º turno: ${fmtPP(swAvg)} (base dois candidatos)`); }
+    // quanto o que está atrás precisa dos votos restantes para empatar
+    const lead = L.fv-L.lv; const atras = lead>0?'Lula':'Flávio';
+    if(restantes>0){ const need=(Math.abs(lead)+restantes)/2/restantes*100; set('pj-need', need>100?'impossível':fmtPct(need,1)); $('pj-need-l').textContent=`${atras} precisa deste % dos votos restantes para empatar`; }
+    else { set('pj-need','—'); }
   }
   function renderAviso(L){
     const el=$('aviso'); if(!L||L.pst>=20){ el.className='aviso'; el.textContent=''; return; }
@@ -460,6 +502,12 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     PI:{n:'Piauí',f:24.09,l:70.99},PR:{n:'Paraná',f:59.91,l:31.20},RJ:{n:'Rio de Janeiro',f:53.01,l:39.41},RN:{n:'Rio Grande do Norte',f:34.77,l:59.75},
     RO:{n:'Rondônia',f:67.45,l:25.89},RR:{n:'Roraima',f:71.06,l:22.86},RS:{n:'Rio Grande do Sul',f:55.64,l:35.73},SC:{n:'Santa Catarina',f:66.65,l:25.04},
     SE:{n:'Sergipe',f:30.63,l:62.75},SP:{n:'São Paulo',f:51.93,l:38.20},TO:{n:'Tocantins',f:50.44,l:43.42},ZZ:{n:'Exterior',f:43.49,l:47.57}
+  };
+  const UF1V = { // votos do 1º turno por UF (Flávio, Lula) — peso de cada estado na projeção
+    AC:[302807,134770],AL:[735718,995459],AM:[976764,1046996],AP:[212278,212503],BA:[2442585,5664771],CE:[1756850,3555263],DF:[909616,675627],ES:[1233194,850028],
+    GO:[2051888,1188880],MA:[1239040,2566301],MG:[5777548,5188936],MS:[873351,516855],MT:[1298581,581681],PA:[2163957,2427237],PB:[831377,1541127],PE:[1738043,3553971],
+    PI:[517028,1523710],PR:[3945345,2054597],RJ:[4966844,3693021],RN:[720493,1237963],RO:[652988,250667],RR:[231322,74420],RS:[3573783,2294759],SC:[3000020,1127168],
+    SE:[417839,856019],SP:[12922023,9505413],TO:[469321,404009],ZZ:[143900,157387]
   };
   let ufHist = {};   // {uf:[snapshots]}
   let fech1 = {};    // {UF:{fechou,p50,p90,p99,secoes}} — 1º turno, do boletim de urna
