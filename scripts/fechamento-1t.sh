@@ -2,7 +2,7 @@
 # Hora de fechamento de cada UF no 1º turno, a partir do boletim de urna aberto do TSE (bweb).
 # Saída: data/fechamento-1t.json ({UF:{secoes,primeiro,p50,p90,p99,fechou}}) e data/fechamento-1t.log
 set -uo pipefail
-UFS="AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO ZZ"
+UFS="${UFS_OVERRIDE:-AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO ZZ}"
 BASE="https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes2026/buweb"
 STAMP="${BWEB_STAMP:-051020261403}"
 mkdir -p data tmp

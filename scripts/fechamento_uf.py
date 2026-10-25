@@ -10,7 +10,9 @@ missing = [k for k in need if k not in ix]
 if missing:
     print(json.dumps({"uf": uf, "erro": f"colunas ausentes {missing}", "colunas": h[:40]})); sys.exit(0)
 seen = {}
+sample = []
 for row in r:
+    if len(sample) < 2: sample.append({'cargo': row[ix['DS_CARGO_PERGUNTA']] if len(row)>ix['DS_CARGO_PERGUNTA'] else None, 'dt': row[ix['DT_BU_RECEBIDO']] if len(row)>ix['DT_BU_RECEBIDO'] else None, 'ncols': len(row), 'nhead': len(h)})
     if len(row) <= max(ix.values()): continue
     if row[ix['DS_CARGO_PERGUNTA']].strip().lower() != 'presidente': continue
     key = (row[ix['CD_MUNICIPIO']], row[ix['NR_ZONA']], row[ix['NR_SECAO']])
@@ -25,6 +27,6 @@ for row in r:
     seen[key] = f"{yy}-{mm}-{dd}T{t}"
 ts = sorted(seen.values()); n = len(ts)
 if n == 0:
-    print(json.dumps({"uf": uf, "erro": "nenhuma seção"})); sys.exit(0)
+    print(json.dumps({"uf": uf, "erro": "nenhuma seção", "amostra": sample})); sys.exit(0)
 q = lambda p: ts[min(n - 1, int(n * p))]
 print(json.dumps({"uf": uf, "secoes": n, "primeiro": ts[0], "p50": q(.5), "p90": q(.9), "p99": q(.99), "fechou": ts[-1]}))

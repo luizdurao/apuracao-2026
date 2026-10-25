@@ -2,6 +2,11 @@ name: Fechamento por UF no 1º turno
 
 on:
   workflow_dispatch:
+    inputs:
+      ufs:
+        description: 'UFs (separadas por espaço); vazio = todas'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -13,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Calcular a partir do boletim de urna do TSE
+        env:
+          UFS_OVERRIDE: ${{ github.event.inputs.ufs }}
         run: bash scripts/fechamento-1t.sh
       - name: Commit
         run: |
