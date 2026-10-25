@@ -361,8 +361,10 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     const g = n => c.find(x=>String(x.n)===n) || {};
     const f=g('22'), l=g('13');
     const h = (d.hg||'00:00:00').slice(0,5);
-    const nextDay = d.dg && !/^25\/10/.test(d.dg);
-    return { h, x: nextDay ? T1 : minutes(h), dg:d.dg, hg:d.hg, pst:num(d.pst), st:num(d.st), ts:num(d.ts),
+    const [dd,mm,yy]=(d.dg||'').split('/'); const dayKey=`${yy}${mm}${dd}`;
+    const nextDay = dayKey > '20261025';          // madrugada de 26/10 = "final"
+    const stale = dayKey < '20261025';            // arquivos de antes da eleição: ignorar
+    return { stale, order:d.order||`${dayKey}-${(d.hg||"").replace(/:/g,"")}`, h, x: nextDay ? T1 : minutes(h), dg:d.dg, hg:d.hg, pst:num(d.pst), st:num(d.st), ts:num(d.ts),
       tv:num(d.tv), vv:num(d.vv), vb:num(d.vb), vn:num(d.vn), f:num(f.pvap), l:num(l.pvap), fv:num(f.vap), lv:num(l.vap), final: nextDay || num(d.pst)>=100 };
   }
   function render(){
@@ -477,7 +479,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   }
   function ufRows(){
     return Object.keys(UF1).map(uf=>{
-      const list=(ufHist[uf.toLowerCase()]||[]).map(normalize).sort((a,b)=>a.order<b.order?-1:1);
+      const list=(ufHist[uf.toLowerCase()]||[]).map(normalize).filter(s=>!s.stale).sort((a,b)=>a.order<b.order?-1:1);
       const last=list.length?list[list.length-1]:null;
       const closed=list.find(s=>s.pst>=100);
       const ref=UF1[uf];
@@ -580,8 +582,8 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   function ingest(map,list){ let changed=false; (list||[]).forEach(d=>{ if(d&&d.order&&!map.has(d.order)){map.set(d.order,d);changed=true;} }); return changed; }
   function persist(){ try{ localStorage.setItem('apuracao2026-br',JSON.stringify([...byId.values()])); localStorage.setItem('apuracao2026-zz',JSON.stringify([...byIdZZ.values()])); }catch(e){} }
   function apply(){
-    snaps=[...byId.values()].map(normalize).sort((a,b)=>a.x-b.x||a.hg.localeCompare(b.hg));
-    const z=[...byIdZZ.values()].sort((a,b)=>a.order<b.order?1:-1)[0]; zz=z?normalize(z):null;
+    snaps=[...byId.values()].map(normalize).filter(s=>!s.stale).sort((a,b)=>a.x-b.x||a.hg.localeCompare(b.hg));
+    const z=[...byIdZZ.values()].map(normalize).filter(s=>!s.stale).sort((a,b)=>a.order<b.order?1:-1)[0]; zz=z||null;
     lastWall=Date.now(); render();
   }
   async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.json(); }
