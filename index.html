@@ -454,8 +454,8 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     return {pst:best.pst,f2p:best.f2p,final:finalF2p,drift:finalF2p-best.f2p};
   }
   function renderProj(L){
-    const set=(id,v)=>{$(id).textContent=v;};
-    if(!L){ ['pj-falta','pj-votos','pj-f','pj-l','pj-uf','pj-need'].forEach(i=>set(i,'—')); set('pj-falta-n',''); set('proj-meta','aguardando a apuração'); return; }
+    const set=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
+    if(!L){ ['pj-falta','pj-votos','pj-f','pj-l','pj-traj','pj-need'].forEach(i=>set(i,'—')); set('pj-falta-n',''); set('proj-meta','aguardando a apuração'); return; }
     const faltaSec=L.ts-L.st, faltaPct=100-L.pst;
     set('pj-falta',fmtPct(faltaPct)); set('pj-falta-n',`(${fmtInt(faltaSec)} de ${fmtInt(L.ts)})`);
     // estimativa de votos válidos totais: ritmo atual se já há base; senão, válidos do 1º turno
@@ -473,7 +473,6 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       else share = base + (swAvg??0);
       share=Math.max(0,Math.min(100,share)); fProj+=share*peso; tot+=peso; });
     fProj = tot? fProj/tot : null;
-    if(fProj==null || swAvg==null) set('pj-uf','—'); else set('pj-uf',`${fmtPct(fProj,1)} / ${fmtPct(100-fProj,1)}`);
     // projeção pela trajetória do 1º turno: mesma fração de seções apuradas → correção observada até o final
     const traj = trajetoria1t(L.pst);
     let projTraj=null;
