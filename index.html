@@ -175,15 +175,16 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="kpi"><span class="v num" id="k-bn">—</span><span class="l">brancos + nulos</span></div>
     </div>
     <div class="proj" id="proj">
-      <div class="proj-head"><span class="eyebrow">Projeção · estado a estado</span><span class="note" id="proj-meta"></span></div>
+      <div class="proj-head"><span class="eyebrow">Projeção · pela trajetória do 1º turno</span><span class="note" id="proj-meta"></span></div>
       <div class="proj-grid">
         <div class="kpi"><span class="v num" id="pj-falta">—</span><span class="l">seções que faltam <span class="num" id="pj-falta-n"></span></span></div>
         <div class="kpi"><span class="v num" id="pj-votos">—</span><span class="l">votos válidos ainda por apurar (estimativa)</span></div>
-        <div class="kpi"><span class="v num" id="pj-f">—</span><span class="l">Flávio · projeção final</span></div>
-        <div class="kpi"><span class="v num" id="pj-l">—</span><span class="l">Lula · projeção final</span></div>
+        <div class="kpi"><span class="v num" id="pj-f">—</span><span class="l">Flávio · projeção final (trajetória do 1º turno)</span></div>
+        <div class="kpi"><span class="v num" id="pj-l">—</span><span class="l">Lula · projeção final (trajetória do 1º turno)</span></div>
+        <div class="kpi"><span class="v num" id="pj-uf">—</span><span class="l">projeção estado a estado (Flávio / Lula)</span></div>
         <div class="kpi"><span class="v num" id="pj-need">—</span><span class="l" id="pj-need-l">para virar, precisa dos votos restantes</span></div>
       </div>
-      <p class="note" id="proj-note">A projeção aplica, em cada estado, a variação já observada em relação ao 1º turno (em estados com pouca apuração, usa a variação média dos demais), ponderada pelo tamanho do eleitorado de cada UF no 1º turno. É uma estimativa estatística simples, não um resultado.</p>
+      <p class="note" id="proj-note">Projeção principal: no 1º turno, com a mesma fração de seções apuradas de agora, o Flávio tinha um percentual que depois mudou até o resultado final (as urnas chegam na mesma ordem geográfica); aplica-se a mesma correção à parcial de hoje, na base de dois candidatos. A projeção estado a estado usa a variação observada em cada UF em relação ao 1º turno, ponderada pelo eleitorado. São estimativas estatísticas, não resultados.</p>
     </div>
   </section>
 
@@ -414,9 +415,18 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('k-bn').textContent = L? fmtInt(L.vb+L.vn)+' ('+fmtPct((L.vb+L.vn)/L.tv*100,1)+')' : '—';
     renderAviso(L); renderProj(L); renderZZ(); drawCharts(); drawTables();
   }
+  function trajetoria1t(pst){ // ponto do 1º turno com a fração de seções mais próxima (série do boletim de urna; senão, parciais de jornal)
+    const finalF2p = R1_FINAL.fv/(R1_FINAL.fv+R1_FINAL.lv)*100;
+    let pts;
+    if(S1&&S1.serie&&S1.serie.length){ const tot=TS_TOTAL['1t']; pts=S1.serie.filter(r=>r.a+r.b>0).map(r=>({pst:r.sec/tot*100,f2p:r.a/(r.a+r.b)*100})); }
+    else pts=R1.filter(r=>r.fv).map(r=>({pst:r.pst,f2p:r.fv/(r.fv+r.lv)*100}));
+    if(!pts.length) return null;
+    let best=pts[0]; pts.forEach(p=>{ if(Math.abs(p.pst-pst)<Math.abs(best.pst-pst)) best=p; });
+    return {pst:best.pst,f2p:best.f2p,final:finalF2p,drift:finalF2p-best.f2p};
+  }
   function renderProj(L){
     const set=(id,v)=>{$(id).textContent=v;};
-    if(!L){ ['pj-falta','pj-votos','pj-f','pj-l','pj-need'].forEach(i=>set(i,'—')); set('pj-falta-n',''); set('proj-meta','aguardando a apuração'); return; }
+    if(!L){ ['pj-falta','pj-votos','pj-f','pj-l','pj-uf','pj-need'].forEach(i=>set(i,'—')); set('pj-falta-n',''); set('proj-meta','aguardando a apuração'); return; }
     const faltaSec=L.ts-L.st, faltaPct=100-L.pst;
     set('pj-falta',fmtPct(faltaPct)); set('pj-falta-n',`(${fmtInt(faltaSec)} de ${fmtInt(L.ts)})`);
     // estimativa de votos válidos totais: ritmo atual se já há base; senão, válidos do 1º turno
@@ -434,8 +444,15 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       else share = base + (swAvg??0);
       share=Math.max(0,Math.min(100,share)); fProj+=share*peso; tot+=peso; });
     fProj = tot? fProj/tot : null;
-    if(fProj==null || swAvg==null){ set('pj-f','—'); set('pj-l','—'); set('proj-meta','projeção disponível quando algum estado passar de 8% apurado'); }
-    else { set('pj-f',fmtPct(fProj)); set('pj-l',fmtPct(100-fProj)); set('proj-meta',`${nObs} estado(s) com apuração própria · variação média observada vs 1º turno: ${fmtPP(swAvg)} (base dois candidatos)`); }
+    if(fProj==null || swAvg==null) set('pj-uf','—'); else set('pj-uf',`${fmtPct(fProj,1)} / ${fmtPct(100-fProj,1)}`);
+    // projeção pela trajetória do 1º turno: mesma fração de seções apuradas → correção observada até o final
+    const traj = trajetoria1t(L.pst);
+    if(traj && L.pst>=0.5){
+      const f2p = L.fv+L.lv>0 ? L.fv/(L.fv+L.lv)*100 : L.f;        // base dois candidatos (no 2º turno = % dos válidos)
+      const proj = Math.max(0,Math.min(100, f2p + traj.drift));
+      set('pj-f',fmtPct(proj)); set('pj-l',fmtPct(100-proj));
+      set('proj-meta',`no 1º turno, com ${fmtPct(traj.pst,1)} apurado, Flávio tinha ${fmtPct(traj.f2p,1)} (base 2 candidatos) e fechou em ${fmtPct(traj.final,1)}: correção de ${fmtPP(traj.drift)}`);
+    } else { set('pj-f','—'); set('pj-l','—'); set('proj-meta','projeção disponível a partir de 0,5% apurado'); }
     // quanto o que está atrás precisa dos votos restantes para empatar
     const lead = L.fv-L.lv; const atras = lead>0?'Lula':'Flávio';
     if(restantes>0){ const need=(Math.abs(lead)+restantes)/2/restantes*100; set('pj-need', need>100?'impossível':fmtPct(need,1)); $('pj-need-l').textContent=`${atras} precisa deste % dos votos restantes para empatar`; }
