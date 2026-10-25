@@ -161,7 +161,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="chart-head"><h2>% dos votos válidos ao longo da noite</h2>
         <div class="legend"><span><i class="f"></i>Flávio · 2º turno</span><span><i class="l"></i>Lula · 2º turno</span><span><i class="f dash"></i>Flávio · 1º turno</span><span><i class="l dash"></i>Lula · 1º turno</span><span><i class="f dot2"></i>Bolsonaro · 2022</span><span><i class="l dot2"></i>Lula · 2022</span></div></div>
       <div class="plot" id="chart-pct"></div>
-      <p class="note">No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos. A linha pontilhada de 2022 traz o 2º turno Lula × Bolsonaro (30/10/2022): Bolsonaro liderou até cerca de 66% das urnas, Lula virou às 18h45 e foi declarado eleito às 19h56 com 98,91% apuradas.</p>
+      <p class="note"><span id="fonte-series"></span>No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos. A linha pontilhada de 2022 traz o 2º turno Lula × Bolsonaro (30/10/2022): Bolsonaro liderou até cerca de 66% das urnas, Lula virou às 18h45 e foi declarado eleito às 19h56 com 98,91% apuradas.</p>
     </div>
     <div class="card">
       <div class="chart-head"><h2>Vantagem de Flávio sobre Lula (p.p.)</h2>
@@ -350,8 +350,9 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   }
   function drawCharts(){
     const live = snaps.filter(s=>s.tv>0);
-    const r1 = R1.map(r=>({...r, x:minutes(r.h)}));
-    const r22 = R22.map(r=>({...r, x:minutes(r.h)}));
+    const s1=serieToPts(S1,2), s22=serieToPts(S22,2);
+    const r1 = s1 ? s1.map(p=>({h:p.h,x:p.x,pst:p.pst,f:p.a,l:p.b,vv:p.vv})) : R1.map(r=>({...r, x:minutes(r.h)}));
+    const r22 = s22 ? s22.map(p=>({h:p.h,x:p.x,pst:p.pst,b:p.a,l:p.b,vv:p.vv})) : R22.map(r=>({...r, x:minutes(r.h)}));
     lineChart($('chart-pct'), [
       {name:'Flávio 2º',cls:'r2 f',dotCls:'f',pts:live.map(s=>({x:s.x,y:s.f,h:s.h})),endLabel:v=>fmtPct(v,1)},
       {name:'Lula 2º',cls:'r2 l',dotCls:'l',pts:live.map(s=>({x:s.x,y:s.l,h:s.h})),endLabel:v=>fmtPct(v,1)},
@@ -377,8 +378,11 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   function drawTables(){
     const live = snaps.filter(s=>s.tv>0);
     if(live.length) $('r2-table').innerHTML = table(live.slice().reverse(), true);
-    $('r22-table').innerHTML = '<table><thead><tr><th>Hora</th><th>Seções</th><th>Válidos</th><th>Bolsonaro</th><th>Lula</th><th>Vantagem Lula</th></tr></thead><tbody>'+R22.slice().reverse().map(r=>`<tr${r.final?' class="final"':''}><td class="num">${r.h}</td><td class="num">${fmtPct(r.pst)}</td><td class="num">${fmtInt(r.vv)}</td><td class="num f">${fmtPct(r.b)}</td><td class="num l">${fmtPct(r.l)}</td><td class="num">${fmtPP(r.l-r.b)}</td></tr>`).join('')+'</tbody></table>';
-    $('r1-table').innerHTML = table(R1.map(r=>({...r, fv:r.fv, lv:r.lv})).slice().reverse(), false).replace('<th>Hora</th>','<th>Hora (reportagem)</th>');
+    const s22t=serieToPts(S22,15), s1t=serieToPts(S1,15);
+    if(s22t){ $('r22-table').innerHTML = '<table><thead><tr><th>Hora</th><th>Seções</th><th>Válidos</th><th>Bolsonaro</th><th>Lula</th><th>Vantagem Lula</th></tr></thead><tbody>'+s22t.slice().reverse().map(r=>`<tr${r.h==='final'?' class="final"':''}><td class="num">${r.h}</td><td class="num">${fmtPct(r.pst)}</td><td class="num">${fmtInt(r.vv)}</td><td class="num f">${fmtPct(r.a)}</td><td class="num l">${fmtPct(r.b)}</td><td class="num">${fmtPP(r.b-r.a)}</td></tr>`).join('')+'</tbody></table>'; }
+    else $('r22-table').innerHTML = '<table><thead><tr><th>Hora</th><th>Seções</th><th>Válidos</th><th>Bolsonaro</th><th>Lula</th><th>Vantagem Lula</th></tr></thead><tbody>'+R22.slice().reverse().map(r=>`<tr${r.final?' class="final"':''}><td class="num">${r.h}</td><td class="num">${fmtPct(r.pst)}</td><td class="num">${fmtInt(r.vv)}</td><td class="num f">${fmtPct(r.b)}</td><td class="num l">${fmtPct(r.l)}</td><td class="num">${fmtPP(r.l-r.b)}</td></tr>`).join('')+'</tbody></table>';
+    if(s1t) $('r1-table').innerHTML = table(s1t.map(r=>({h:r.h,pst:r.pst,vv:r.vv,f:r.a,l:r.b,fv:r.av,lv:r.bv,final:r.h==='final'})).slice().reverse(), false);
+    else $('r1-table').innerHTML = table(R1.map(r=>({...r, fv:r.fv, lv:r.lv})).slice().reverse(), false).replace('<th>Hora</th>','<th>Hora (reportagem)</th>');
   }
   $('copy-csv').addEventListener('click', function(){
     const live=snaps.filter(s=>s.tv>0);
@@ -404,6 +408,19 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   };
   let ufHist = {};   // {uf:[snapshots]}
   let fech1 = {};    // {UF:{fechou,p50,p90,p99,secoes}} — 1º turno, do boletim de urna
+  // Séries reconstruídas do boletim de urna (minuto a minuto). Quando existem, substituem os pontos de jornal.
+  let S1 = null, S22 = null;
+  const TS_TOTAL = {'1t':499248,'2022':472075};
+  function serieToPts(S, step){ // reduz a 1 ponto a cada `step` minutos + último; % dos válidos
+    if(!S||!S.serie||!S.serie.length) return null;
+    const tot = TS_TOTAL[S.rotulo]||S.serie[S.serie.length-1].sec;
+    const out=[]; let lastT=-1e9;
+    S.serie.forEach((r,i)=>{ const d=r.t.slice(0,10), hm=r.t.slice(11,16); const [H,M]=hm.split(':').map(Number);
+      const nextDay = d > S.serie[0].t.slice(0,10); const m = nextDay ? T1 : H*60+M;
+      if(nextDay && i!==S.serie.length-1) return;
+      if(m-lastT>=step || i===S.serie.length-1){ lastT=m; out.push({h:nextDay?'final':hm, x:m, pst:r.sec/tot*100, a:r.vv?r.a/r.vv*100:0, b:r.vv?r.b/r.vv*100:0, vv:r.vv, av:r.a, bv:r.b, tv:r.tv}); } });
+    return out;
+  }
   function ufRows(){
     return Object.keys(UF1).map(uf=>{
       const list=(ufHist[uf.toLowerCase()]||[]).map(normalize).sort((a,b)=>a.order<b.order?-1:1);
@@ -474,6 +491,9 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     try{ ingest(byIdZZ, await getJSON('data/historico-zz.json?t='+Date.now())); }catch(e){}
     try{ const h=await getJSON('data/historico-uf.json?t='+Date.now()); if(h&&typeof h==='object') ufHist=h; }catch(e){}
     try{ const f=await getJSON('data/fechamento-1t.json'); if(f&&typeof f==='object') fech1=f; }catch(e){}
+    try{ S1=await getJSON('data/serie-1t.json'); if(S1&&S1.ufs) Object.keys(S1.ufs).forEach(u=>{ if(!fech1[u]) fech1[u]=S1.ufs[u]; }); }catch(e){}
+    try{ S22=await getJSON('data/serie-2022.json'); }catch(e){}
+    if(S1||S22) $('fonte-series').textContent = 'As curvas do 1º turno e de 2022 foram reconstruídas minuto a minuto a partir do boletim de urna aberto do TSE (hora em que cada urna foi recebida pela totalização), com percentuais sobre os votos válidos já recebidos. ';
     // exterior entra na tabela por estado a partir do próprio ZZ
     ufHist.zz=[...byIdZZ.values()];
     apply(); drawUF();
