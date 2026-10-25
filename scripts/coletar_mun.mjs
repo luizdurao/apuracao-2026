@@ -23,7 +23,10 @@ try {
 let prev = { m: {} }; try { prev = JSON.parse(await readFile('data/mun-2t.json', 'utf8')); } catch {}
 const out = { dg: prev.dg || null, hg: prev.hg || null, m: { ...prev.m } };   // mantém o que já tinha; substitui só o que buscar com sucesso
 let ok = 0, falhas = 0;
-const fila = lista.slice();
+// pula municípios já 100% apurados na coleta anterior; embaralha para distribuir falhas
+const fila = lista.filter(({cd}) => { const v = prev.m?.[cd]; return !(v && v[1] > 0 && v[0] >= v[1]); }).sort(() => Math.random() - 0.5);
+console.log(`fila: ${fila.length} municípios a consultar`);
+const errosTipo = {};
 async function worker() {
   while (fila.length) {
     const { uf, cd } = fila.shift();
@@ -35,10 +38,11 @@ async function worker() {
       out.m[cd] = [num(j.s?.st), num(j.s?.ts), num(j.v?.tv), num(j.v?.vv), cand['22'] || 0, cand['13'] || 0];
       if (!out.hg || j.hg > out.hg) { out.hg = j.hg; out.dg = j.dg; }
       ok++;
-    } catch (e) { falhas++; }
+    } catch (e) { falhas++; const k = String(e.message).slice(0, 12); errosTipo[k] = (errosTipo[k] || 0) + 1; }
+    await new Promise(r => setTimeout(r, 120));
   }
 }
-await Promise.all(Array.from({ length: 16 }, worker));
-out.ok = ok; out.falhas = falhas; out.quando = new Date().toISOString();
+await Promise.all(Array.from({ length: 8 }, worker));
+out.ok = ok; out.falhas = falhas; out.quando = new Date().toISOString(); out.erros = errosTipo;
 console.log(`municípios: ${ok} ok, ${falhas} falhas, último carimbo ${out.hg}`);
 if (ok > 0) await writeFile('data/mun-2t.json', JSON.stringify(out));
