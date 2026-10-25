@@ -161,7 +161,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="chart-head"><h2>% dos votos válidos ao longo da noite</h2>
         <div class="legend"><span><i class="f"></i>Flávio · 2º turno</span><span><i class="l"></i>Lula · 2º turno</span><span><i class="f dash"></i>Flávio · 1º turno</span><span><i class="l dash"></i>Lula · 1º turno</span><span><i class="f dot2"></i>Bolsonaro · 2022</span><span><i class="l dot2"></i>Lula · 2022</span></div></div>
       <div class="plot" id="chart-pct"></div>
-      <p class="note"><span id="fonte-series"></span>No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos. A linha pontilhada de 2022 traz o 2º turno Lula × Bolsonaro (30/10/2022): Bolsonaro liderou até cerca de 66% das urnas, Lula virou às 18h45 e foi declarado eleito às 19h56 com 98,91% apuradas.</p>
+      <p class="note"><span id="fonte-series"></span>No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos. A linha pontilhada de 2022 traz o 2º turno Lula × Bolsonaro (30/10/2022): Bolsonaro abriu com mais de 55% nos primeiros minutos, Lula virou por volta das 18h45 (cerca de 70% das urnas) e foi declarado eleito às 19h56 com 98,91% apuradas.</p>
     </div>
     <div class="card">
       <div class="chart-head"><h2>Vantagem de Flávio sobre Lula (p.p.)</h2>
@@ -418,6 +418,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     S.serie.forEach((r,i)=>{ const d=r.t.slice(0,10), hm=r.t.slice(11,16); const [H,M]=hm.split(':').map(Number);
       const nextDay = d > S.serie[0].t.slice(0,10); const m = nextDay ? T1 : H*60+M;
       if(nextDay && i!==S.serie.length-1) return;
+      if(r.sec/tot*100 < 0.5 && i!==S.serie.length-1) return;   // ignora os primeiros minutos (poucas urnas, muito ruído)
       if(m-lastT>=step || i===S.serie.length-1){ lastT=m; out.push({h:nextDay?'final':hm, x:m, pst:r.sec/tot*100, a:r.vv?r.a/r.vv*100:0, b:r.vv?r.b/r.vv*100:0, vv:r.vv, av:r.a, bv:r.b, tv:r.tv}); } });
     return out;
   }
