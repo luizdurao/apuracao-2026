@@ -63,6 +63,30 @@ for (const f of FONTES) {
   }
   if (m) { await writeFile(arq, JSON.stringify(hist)); mudou = true; console.log('uf: histórico atualizado'); }
 }
+// Polymarket: chance de vitória (preço do "Yes" em cada mercado do evento "Brazil Presidential Election")
+{
+  const arq = 'data/historico-odds.json';
+  let hist = [];
+  try { hist = JSON.parse(await readFile(arq, 'utf8')); } catch {}
+  const slugs = { flavio: 'will-flvio-bolsonaro-win-the-2026-brazilian-presidential-election', lula: 'will-luiz-incio-lula-da-silva-win-the-2026-brazilian-presidential-election' };
+  const ponto = { t: new Date().toISOString() };
+  for (const [k, slug] of Object.entries(slugs)) {
+    try {
+      const r = await fetch(`https://gamma-api.polymarket.com/markets?slug=${slug}`);
+      const j = await r.json(); const m = Array.isArray(j) ? j[0] : j;
+      const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+      const outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
+      const i = outcomes.findIndex(o => /yes/i.test(o));
+      ponto[k] = Math.round(parseFloat(prices[i]) * 10000) / 100;   // em %
+      ponto[k + '_last'] = m.lastTradePrice != null ? Math.round(m.lastTradePrice * 10000) / 100 : null;
+    } catch (e) { status.erros.push(`odds ${k}: ${e.message}`); }
+  }
+  if (ponto.flavio != null || ponto.lula != null) {
+    hist.push(ponto); if (hist.length > 2000) hist = hist.slice(-2000);
+    await writeFile(arq, JSON.stringify(hist)); mudou = true; status.odds = ponto;
+    console.log(`odds: Flávio ${ponto.flavio}% · Lula ${ponto.lula}%`);
+  }
+}
 await writeFile('data/coleta-status.json', JSON.stringify(status, null, 1));
 process.exitCode = 0;
 if (mudou) console.log('CHANGED=1');

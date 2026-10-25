@@ -187,6 +187,19 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     </div>
   </section>
 
+  <section class="card" aria-label="Polymarket">
+    <div class="chart-head"><h2>Polymarket · chance de vitória</h2><span class="note" id="odds-meta">carregando…</span></div>
+    <div class="kpis">
+      <div class="kpi"><span class="v num" id="odds-f">—</span><span class="l">Flávio Bolsonaro · "Yes"</span></div>
+      <div class="kpi"><span class="v num" id="odds-l">—</span><span class="l">Lula · "Yes"</span></div>
+      <div class="kpi"><span class="v num" id="odds-df">—</span><span class="l">variação desde as 17h (Flávio)</span></div>
+    </div>
+    <div class="chart-head" style="margin-top:12px"><h2 style="font-size:14px">Odds ao longo da noite (%)</h2>
+      <div class="legend"><span><i class="f"></i>Flávio</span><span><i class="l"></i>Lula</span></div></div>
+    <div class="plot" id="chart-odds"></div>
+    <p class="note">Preço do contrato "Yes" em cada mercado do evento <a href="https://polymarket.com/event/brazil-presidential-election">Brazil Presidential Election</a> (1 = 100%). É o que o mercado de apostas está precificando, não um resultado; os dois somam menos de 100% porque há outros contratos e spread. Lido ao vivo a cada minuto; histórico gravado a cada 5 min.</p>
+  </section>
+
   <section class="card" aria-label="Exterior">
     <div class="chart-head"><h2>Exterior (ZZ)</h2><span class="note" id="zz-status">Os votos do exterior entram no total nacional acima; aqui aparecem separados.</span></div>
     <div class="kpis">
@@ -618,6 +631,37 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   }
   document.querySelectorAll('.map-tabs button').forEach(b=>b.addEventListener('click',()=>{ mapMode=b.dataset.map; document.querySelectorAll('.map-tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b)); drawMap(); }));
 
+
+  // ---------- Polymarket ----------
+  const ODDS_SLUGS={flavio:'will-flvio-bolsonaro-win-the-2026-brazilian-presidential-election',lula:'will-luiz-incio-lula-da-silva-win-the-2026-brazilian-presidential-election'};
+  let oddsHist=[];   // [{t,flavio,lula}]
+  function oddsX(iso){ const d=new Date(iso); const m=d.getUTCHours()*60+d.getUTCMinutes()-180; return m<0?m+1440:m; } // UTC-3
+  function renderOdds(){
+    const pts=oddsHist.filter(p=>p.flavio!=null||p.lula!=null).sort((a,b)=>a.t<b.t?-1:1);
+    const last=pts[pts.length-1]; if(!last){ $('odds-meta').textContent='sem leitura ainda'; return; }
+    $('odds-f').textContent=last.flavio!=null?fmtPct(last.flavio,1):'—'; $('odds-l').textContent=last.lula!=null?fmtPct(last.lula,1):'—';
+    const d=new Date(last.t); $('odds-meta').textContent='última leitura '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
+    const base=pts.find(p=>p.flavio!=null && oddsX(p.t)>=17*60) || pts[0];
+    if(base&&last.flavio!=null&&base.flavio!=null){ const dd=last.flavio-base.flavio; const e=$('odds-df'); e.textContent=fmtPP(dd); e.className='v num '+(dd>=0?'delta up':'delta down'); }
+    const day=pts.filter(p=>oddsX(p.t)>=T0-30);
+    lineChart($('chart-odds'),[
+      {name:'Flávio',cls:'r2 f',dotCls:'f',pts:day.filter(p=>p.flavio!=null).map(p=>({x:oddsX(p.t),y:p.flavio,h:new Date(p.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})})),endLabel:v=>fmtPct(v,0)},
+      {name:'Lula',cls:'r2 l',dotCls:'l',pts:day.filter(p=>p.lula!=null).map(p=>({x:oddsX(p.t),y:p.lula,h:new Date(p.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})})),endLabel:v=>fmtPct(v,0)}
+    ],{y0:0,y1:100,fmtY:v=>v+'%',fmtTip:v=>fmtPct(v,1),height:220,label:'Odds da Polymarket ao longo da noite'});
+  }
+  async function tickOdds(){
+    const ponto={t:new Date().toISOString()};
+    await Promise.all(Object.entries(ODDS_SLUGS).map(async([k,slug])=>{ try{ const r=await fetch('https://gamma-api.polymarket.com/markets?slug='+slug,{cache:'no-store'}); const j=await r.json(); const m=Array.isArray(j)?j[0]:j;
+      const prices=typeof m.outcomePrices==='string'?JSON.parse(m.outcomePrices):m.outcomePrices; const outcomes=typeof m.outcomes==='string'?JSON.parse(m.outcomes):m.outcomes; const i=outcomes.findIndex(o=>/yes/i.test(o)); ponto[k]=Math.round(parseFloat(prices[i])*10000)/100; }catch(e){} }));
+    if(ponto.flavio!=null||ponto.lula!=null){ oddsHist.push(ponto); try{ localStorage.setItem('apuracao2026-odds',JSON.stringify(oddsHist.slice(-600))); }catch(e){} }
+    renderOdds();
+  }
+  async function loadOdds(){
+    try{ const l=JSON.parse(localStorage.getItem('apuracao2026-odds')||'[]'); l.forEach(p=>{ if(!oddsHist.some(q=>q.t===p.t)) oddsHist.push(p); }); }catch(e){}
+    try{ const h=await getJSON('data/historico-odds.json?t='+Date.now()); (h||[]).forEach(p=>{ if(!oddsHist.some(q=>q.t===p.t)) oddsHist.push(p); }); }catch(e){}
+    renderOdds();
+  }
+
   // ---------- fonte de dados: TSE ao vivo + histórico gravado pela Action ----------
   const TSE='https://resultados.tse.jus.br/oficial/ele2026/6258/dados/';
   const URL_BR=TSE+'br/br-c0001-e006258-u.json', URL_ZZ=TSE+'zz/zz-c0001-e006258-u.json';
@@ -661,8 +705,8 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     ufHist.zz=[...byIdZZ.values()];
     apply(); drawUF();
   }
-  render(); drawUF(); loadHistory().then(tick); setInterval(tick,60000); setInterval(loadHistory,300000);
-  let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(drawCharts,150);});
+  render(); drawUF(); loadHistory().then(tick); loadOdds().then(tickOdds); setInterval(tickOdds,60000); setInterval(loadOdds,300000); setInterval(tick,60000); setInterval(loadHistory,300000);
+  let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{drawCharts();renderOdds();},150);});
 })();
 </script>
 
