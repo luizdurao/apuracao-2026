@@ -549,7 +549,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       rows.map(r=>{
         const lead=r.f!=null?r.f-r.l:null, lf=r.f!=null?fmtPP(r.f-r.ref.f):'—', ll=r.l!=null?fmtPP(r.l-r.ref.l):'—';
         const winner=r.f!=null?(r.f>r.l?'flavio':'lula'):'';
-        return `<tr><td><b>${r.uf}</b> <span class="c">${r.n}</span></td><td class="num">${r.hora||(r.last&&r.pst>0?'apurando':'—')}</td>`+
+        return `<tr><td><b>${r.uf}</b> <span class="c">${r.n}</span></td><td class="num">${r.hora||(r.last&&r.pst>0?'apurando':'—')}</td><td class="num c">${r.h1?r.h99+' · '+r.h1:'—'}</td>`+
           `<td class="num"><span class="mini"><i style="width:${r.pst}%"></i></span> ${fmtPct(r.pst,1)}</td>`+
           `<td class="num ${winner==='flavio'?'flavio':''}">${r.f!=null?fmtPct(r.f):'—'}</td><td class="num ${winner==='lula'?'lula':''}">${r.l!=null?fmtPct(r.l):'—'}</td>`+
           `<td class="num">${lead!=null?fmtPP(lead):'—'}</td><td class="num c">${fmtPct(r.ref.f,1)} / ${fmtPct(r.ref.l,1)}</td>`+
