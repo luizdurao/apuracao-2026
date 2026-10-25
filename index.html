@@ -76,6 +76,10 @@ header{display:grid;gap:10px}
 .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .line.r2{stroke-width:2.5}
 .line.r1{stroke-dasharray:5 4;opacity:.75}
+.line.r22{stroke-dasharray:2 3;opacity:.9}
+.line.m{stroke:var(--muted)}
+.dot.m{fill:var(--muted)}
+.legend i.dot2{border-top-style:dotted;border-top-width:3px}
 .line.f{stroke:var(--flavio)}.line.l{stroke:var(--lula)}
 .dot{stroke:var(--surface);stroke-width:2}
 .dot.f{fill:var(--flavio)}.dot.l{fill:var(--lula)}
@@ -97,7 +101,7 @@ details summary{cursor:pointer;font-weight:600;font-size:14px}
 button.ghost{font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--fg);padding:4px 10px;border-radius:6px;cursor:pointer}
 button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio);outline-offset:2px}
 
-.uf-table table{min-width:760px}
+.uf-table table{min-width:980px}
 .uf-table td.c{color:var(--muted)}
 .uf-table .flavio{color:var(--flavio);font-weight:600}.uf-table .lula{color:var(--lula);font-weight:600}
 .uf-table .mini{display:inline-block;width:64px;height:6px;background:var(--grid);border-radius:3px;vertical-align:middle;overflow:hidden}
@@ -111,7 +115,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
 <div class="wrap">
   <header>
     <div class="eyebrow">Eleições 2026 · Presidente da República · Brasil</div>
-    <h1>Apuração do 2º turno, hora a hora, contra o 1º turno</h1>
+    <h1>Apuração do 2º turno, hora a hora, contra o 1º turno e contra 2022</h1>
     <div class="status">
       <span class="pill" id="pill" data-state="wait">Aguardando a apuração</span>
       <span id="tse-time">Urnas fecham às 17h (horário de Brasília)</span>
@@ -124,13 +128,13 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="who"><span class="swatch"></span><div><div class="name">Flávio Bolsonaro</div><div class="meta">22 · PL · vice Alfredo Gaspar</div></div></div>
       <div class="pct num" id="p22">—</div>
       <div class="bar"><i id="b22"></i></div>
-      <div class="sub"><span class="num" id="v22">sem votos apurados</span><span id="d22">1º turno: 47,03% dos válidos</span></div>
+      <div class="sub"><span class="num" id="v22">sem votos apurados</span><span id="d22">1º turno: 47,03% · Bolsonaro 2022: 49,10%</span></div>
     </div>
     <div class="cand" data-c="13">
       <div class="who"><span class="swatch"></span><div><div class="name">Lula</div><div class="meta">13 · PT · vice Geraldo Alckmin</div></div></div>
       <div class="pct num" id="p13">—</div>
       <div class="bar"><i id="b13"></i></div>
-      <div class="sub"><span class="num" id="v13">sem votos apurados</span><span id="d13">1º turno: 45,16% dos válidos</span></div>
+      <div class="sub"><span class="num" id="v13">sem votos apurados</span><span id="d13">1º turno: 45,16% · Lula 2022: 50,90%</span></div>
     </div>
     <div class="kpis">
       <div class="kpi"><span class="v num" id="k-pst">0,00%</span><span class="l">seções apuradas <span class="num" id="k-sec"></span></span></div>
@@ -149,19 +153,19 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="kpi"><span class="v num" id="zz-pst">—</span><span class="l">seções apuradas no exterior</span></div>
       <div class="kpi"><span class="v num" id="zz-vv">—</span><span class="l">votos válidos no exterior</span></div>
     </div>
-    <p class="note" id="zz-ref">1º turno no exterior: Lula 47,57% (157.387 votos) · Flávio 43,49% (143.900 votos) · cerca de 331 mil válidos de 918.876 eleitores aptos.</p>
+    <p class="note" id="zz-ref">1º turno no exterior: Lula 47,57% (157.387 votos) · Flávio 43,49% (143.900 votos) · cerca de 331 mil válidos de 918.876 eleitores aptos. Em 2022 (2º turno): Lula 51,28% · Bolsonaro 48,72%.</p>
   </section>
 
   <section class="charts">
     <div class="card wide">
       <div class="chart-head"><h2>% dos votos válidos ao longo da noite</h2>
-        <div class="legend"><span><i class="f"></i>Flávio · 2º turno</span><span><i class="l"></i>Lula · 2º turno</span><span><i class="f dash"></i>Flávio · 1º turno</span><span><i class="l dash"></i>Lula · 1º turno</span></div></div>
+        <div class="legend"><span><i class="f"></i>Flávio · 2º turno</span><span><i class="l"></i>Lula · 2º turno</span><span><i class="f dash"></i>Flávio · 1º turno</span><span><i class="l dash"></i>Lula · 1º turno</span><span><i class="f dot2"></i>Bolsonaro · 2022</span><span><i class="l dot2"></i>Lula · 2022</span></div></div>
       <div class="plot" id="chart-pct"></div>
-      <p class="note">No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos.</p>
+      <p class="note">No 1º turno havia mais candidatos, por isso os dois somavam cerca de 92% dos válidos; no 2º turno somam 100%. A vantagem em pontos percentuais (gráfico abaixo) é a comparação mais justa entre os turnos. A linha pontilhada de 2022 traz o 2º turno Lula × Bolsonaro (30/10/2022): Bolsonaro liderou até cerca de 66% das urnas, Lula virou às 18h45 e foi declarado eleito às 19h56 com 98,91% apuradas.</p>
     </div>
     <div class="card">
       <div class="chart-head"><h2>Vantagem de Flávio sobre Lula (p.p.)</h2>
-        <div class="legend"><span><i></i>2º turno</span><span><i class="dash"></i>1º turno</span></div></div>
+        <div class="legend"><span><i></i>2º turno</span><span><i class="dash"></i>1º turno</span><span><i class="dot2"></i>2022 (Bolsonaro − Lula)</span></div></div>
       <div class="plot" id="chart-lead"></div>
     </div>
     <div class="card">
@@ -174,9 +178,9 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   <section class="card uf-table" aria-label="Por estado">
     <div class="uf-head"><h2>Por estado</h2>
       <label class="note">Ordenar por <select id="uf-sort">
-        <option value="hora">hora de fechamento</option><option value="h1">fechamento no 1º turno</option><option value="pst">% apurado</option><option value="uf">UF</option><option value="delta">maior variação vs 1º</option><option value="f">% Flávio</option></select></label></div>
+        <option value="hora">hora de fechamento</option><option value="h1">fechamento no 1º turno</option><option value="pst">% apurado</option><option value="uf">UF</option><option value="delta">maior variação vs 1º</option><option value="f">% Flávio</option><option value="d22">maior variação vs 2022</option></select></label></div>
     <div class="scroll" id="uf-body"><div class="empty">A tabela por estado é preenchida pela coleta automática a partir das 17h. Enquanto isso, a referência do 1º turno já aparece abaixo.</div></div>
-    <p class="note">"Fechou às" é o carimbo do TSE da primeira parcial em que a UF chegou a 100% das seções. "Fechou no 1º" é a hora em que o TSE recebeu o último boletim de urna da UF em 04/10 (boletim de urna aberto do TSE, cargo presidente). Referência do 1º turno: resultado final do TSE por UF (% dos válidos). Horário de Brasília.</p>
+    <p class="note">"Fechou às" é o carimbo do TSE da primeira parcial em que a UF chegou a 100% das seções. "Fechou no 1º" é a hora em que o TSE recebeu o último boletim de urna da UF em 04/10 (boletim de urna aberto do TSE, cargo presidente). Referência do 1º turno: resultado final do TSE por UF (% dos válidos). "2022" é o 2º turno de 2022 (Bolsonaro / Lula), também % dos válidos. Horário de Brasília.</p>
   </section>
 
   <section class="tables">
@@ -189,6 +193,13 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
         <summary>Referência: parciais do 1º turno (04/10/2026)</summary>
         <div class="scroll" id="r1-table"></div>
         <p class="note">Parciais do 1º turno compiladas da cobertura ao vivo da <a href="https://www.bloomberglinea.com.br/brasil/ao-vivo-brasil-vai-as-urnas-para-eleger-presidente-governadores-e-congresso/">Bloomberg Línea</a> e da <a href="https://tvtnews.com.br/?p=805169">TVT</a>; resultado final do TSE (totalização concluída em 05/10 às 12:51). O TSE não publica série histórica oficial do 1º turno, então os horários são os das reportagens e podem diferir em alguns minutos do carimbo do TSE.</p>
+      </details>
+    </div>
+    <div class="card">
+      <details>
+        <summary>Referência: 2º turno de 2022 (30/10/2022)</summary>
+        <div class="scroll" id="r22-table"></div>
+        <p class="note">Pontos com fonte: <a href="https://www.correiobraziliense.com.br/politica/2022/10/5048141-lula-vira-e-fica-com-vantagem-nas-urnas-acompanhe-apuracao.html">Correio Braziliense</a> (18h45, 66%: virada do Lula), <a href="https://www.tse.jus.br/comunicacao/noticias/2022/Outubro/lula-e-eleito-novamente-presidente-da-republica-do-brasil">TSE</a> (19h56, 98,91%: Lula declarado eleito) e resultado final do TSE. Resultado por UF de 2022 conforme TSE (via Wikipedia).</p>
       </details>
     </div>
     <p class="note">Fonte do 2º turno: <a href="https://resultados.tse.jus.br/">TSE · Divulgação de Resultados</a> (eleição 6258, arquivo unificado Brasil). As parciais são gravadas a cada 5 minutos a partir das 17h; o horário mostrado é o carimbo do próprio TSE. Somente o TSE proclama o resultado.</p>
@@ -216,6 +227,19 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   ];
   R1.forEach(r=>{ if(!r.vv && r.fv) r.vv = Math.round(r.fv/(r.f/100)); });
   const R1_FINAL = R1[R1.length-1];
+  // 2º turno de 2022 (30/10/2022): b = Bolsonaro, l = Lula, % dos válidos. Pontos com fonte: Correio Braziliense (18:45), TSE (19:56, eleito), TSE (final)
+  const R22 = [
+    {h:'18:45',pst:66,   b:49.99,l:50.01},
+    {h:'19:56',pst:98.91,b:49.17,l:50.83,bv:57675427,lv:59563912,vv:117305567},
+    {h:'final',pst:100,  b:49.10,l:50.90,bv:58206354,lv:60345999,vv:118552353,final:true}
+  ];
+  const R22_FINAL = R22[R22.length-1];
+  const UF22 = { // 2º turno 2022, % dos válidos: b = Bolsonaro, l = Lula (TSE via Wikipedia)
+    AC:{b:70.30,l:29.70},AL:{b:41.32,l:58.68},AM:{b:48.90,l:51.10},AP:{b:51.36,l:48.64},BA:{b:27.88,l:72.12},CE:{b:30.03,l:69.97},DF:{b:58.04,l:41.96},
+    ES:{b:58.81,l:41.19},GO:{b:58.71,l:41.29},MA:{b:28.86,l:71.14},MG:{b:49.80,l:50.20},MS:{b:59.49,l:40.51},MT:{b:65.08,l:34.92},PA:{b:45.25,l:54.75},
+    PB:{b:33.38,l:66.62},PE:{b:33.07,l:66.93},PI:{b:23.14,l:76.86},PR:{b:62.40,l:37.60},RJ:{b:56.53,l:43.47},RN:{b:34.90,l:65.10},RO:{b:70.66,l:29.34},
+    RR:{b:76.08,l:23.92},RS:{b:56.35,l:43.65},SC:{b:69.27,l:30.73},SE:{b:32.79,l:67.21},SP:{b:55.24,l:44.76},TO:{b:48.64,l:51.36},ZZ:{b:48.72,l:51.28}
+  };
 
   // ---------- utilidades ----------
   const fmtInt = n => n==null ? '—' : Math.round(n).toLocaleString('pt-BR');
@@ -306,8 +330,8 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('p22').textContent = L?fmtPct(L.f):'—'; $('p13').textContent = L?fmtPct(L.l):'—';
     $('b22').style.width=(L?L.f:0)+'%'; $('b13').style.width=(L?L.l:0)+'%';
     $('v22').textContent = L?fmtInt(L.fv)+' votos':'sem votos apurados'; $('v13').textContent = L?fmtInt(L.lv)+' votos':'sem votos apurados';
-    const dlt=(id,cur,ref)=>{ const e=$(id); if(!L){e.textContent=`1º turno: ${fmtPct(ref)} dos válidos`;e.className='';return;} const d=cur-ref; e.innerHTML=`vs 1º turno (${fmtPct(ref)}): <span class="delta ${d>=0?'up':'down'}">${fmtPP(d)}</span>`; };
-    dlt('d22',L?L.f:0,R1_FINAL.f); dlt('d13',L?L.l:0,R1_FINAL.l);
+    const dlt=(id,cur,ref,ref22,lbl22)=>{ const e=$(id); if(!L){e.textContent=`1º turno: ${fmtPct(ref)} · ${lbl22} 2022: ${fmtPct(ref22)}`;e.className='';return;} const d=cur-ref, d2=cur-ref22; e.innerHTML=`vs 1º turno (${fmtPct(ref)}): <span class="delta ${d>=0?'up':'down'}">${fmtPP(d)}</span> · vs ${lbl22} 2022 (${fmtPct(ref22)}): <span class="delta ${d2>=0?'up':'down'}">${fmtPP(d2)}</span>`; };
+    dlt('d22',L?L.f:0,R1_FINAL.f,R22_FINAL.b,'Bolsonaro'); dlt('d13',L?L.l:0,R1_FINAL.l,R22_FINAL.l,'Lula');
     $('k-pst').textContent = fmtPct(L?L.pst:0); $('k-sec').textContent = L?`(${fmtInt(L.st)} de ${fmtInt(L.ts)})`:'';
     $('k-tv').textContent = fmtInt(L?L.tv:0); $('k-vv').textContent = fmtInt(L?L.vv:0);
     $('k-lead').textContent = L? fmtPP(L.f-L.l) : '—';
@@ -322,20 +346,24 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('zz-fv').textContent = z?fmtInt(z.fv)+' votos':''; $('zz-lv').textContent = z?fmtInt(z.lv)+' votos':'';
     $('zz-pst').textContent = z?fmtPct(z.pst):'—'; $('zz-vv').textContent = z?fmtInt(z.vv):'—';
     $('zz-status').textContent = z ? `Dados do TSE de ${z.dg} às ${z.hg}` : 'Os votos do exterior entram no total nacional acima; aqui aparecem separados.';
-    if(z){ $('zz-ref').innerHTML = `vs 1º turno no exterior: Flávio ${fmtPct(ZZ1.f)} → <span class="delta ${z.f-ZZ1.f>=0?'up':'down'}">${fmtPP(z.f-ZZ1.f)}</span> · Lula ${fmtPct(ZZ1.l)} → <span class="delta ${z.l-ZZ1.l>=0?'up':'down'}">${fmtPP(z.l-ZZ1.l)}</span> · 1º turno: ${fmtInt(ZZ1.fv)} e ${fmtInt(ZZ1.lv)} votos.`; }
+    if(z){ $('zz-ref').innerHTML = `vs 1º turno no exterior: Flávio ${fmtPct(ZZ1.f)} → <span class="delta ${z.f-ZZ1.f>=0?'up':'down'}">${fmtPP(z.f-ZZ1.f)}</span> · Lula ${fmtPct(ZZ1.l)} → <span class="delta ${z.l-ZZ1.l>=0?'up':'down'}">${fmtPP(z.l-ZZ1.l)}</span> · 2022: Bolsonaro ${fmtPct(UF22.ZZ.b)} / Lula ${fmtPct(UF22.ZZ.l)}.`; }
   }
   function drawCharts(){
     const live = snaps.filter(s=>s.tv>0);
     const r1 = R1.map(r=>({...r, x:minutes(r.h)}));
+    const r22 = R22.map(r=>({...r, x:minutes(r.h)}));
     lineChart($('chart-pct'), [
       {name:'Flávio 2º',cls:'r2 f',dotCls:'f',pts:live.map(s=>({x:s.x,y:s.f,h:s.h})),endLabel:v=>fmtPct(v,1)},
       {name:'Lula 2º',cls:'r2 l',dotCls:'l',pts:live.map(s=>({x:s.x,y:s.l,h:s.h})),endLabel:v=>fmtPct(v,1)},
       {name:'Flávio 1º',cls:'r1 f',dotCls:'f',pts:r1.map(r=>({x:r.x,y:r.f,h:r.h}))},
-      {name:'Lula 1º',cls:'r1 l',dotCls:'l',pts:r1.map(r=>({x:r.x,y:r.l,h:r.h}))}
+      {name:'Lula 1º',cls:'r1 l',dotCls:'l',pts:r1.map(r=>({x:r.x,y:r.l,h:r.h}))},
+      {name:'Bolsonaro 2022',cls:'r22 f',dotCls:'f',pts:r22.map(r=>({x:r.x,y:r.b,h:r.h}))},
+      {name:'Lula 2022',cls:'r22 l',dotCls:'l',pts:r22.map(r=>({x:r.x,y:r.l,h:r.h}))}
     ],{y0:38,y1:58,fmtY:v=>v+'%',fmtTip:v=>fmtPct(v),height:300,label:'Percentual dos votos válidos por horário, 2º turno contra 1º turno'});
     lineChart($('chart-lead'), [
       {name:'2º turno',cls:'r2 f',dotCls:'f',pts:live.map(s=>({x:s.x,y:s.f-s.l,h:s.h})),endLabel:v=>fmtPP(v)},
-      {name:'1º turno',cls:'r1 f',dotCls:'f',pts:r1.map(r=>({x:r.x,y:r.f-r.l,h:r.h}))}
+      {name:'1º turno',cls:'r1 f',dotCls:'f',pts:r1.map(r=>({x:r.x,y:r.f-r.l,h:r.h}))},
+      {name:'2022 (Bolsonaro − Lula)',cls:'r22 m',dotCls:'m',pts:r22.map(r=>({x:r.x,y:r.b-r.l,h:r.h}))}
     ],{y0:-4,y1:12,zero:true,fmtY:v=>(v>0?'+':'')+v,fmtTip:v=>fmtPP(v),label:'Vantagem de Flávio sobre Lula em pontos percentuais'});
     lineChart($('chart-votes'), [
       {name:'2º turno',cls:'r2 f',dotCls:'f',pts:live.map(s=>({x:s.x,y:s.vv/1e6,h:s.h})),endLabel:v=>v.toFixed(1)+' mi'},
@@ -349,6 +377,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
   function drawTables(){
     const live = snaps.filter(s=>s.tv>0);
     if(live.length) $('r2-table').innerHTML = table(live.slice().reverse(), true);
+    $('r22-table').innerHTML = '<table><thead><tr><th>Hora</th><th>Seções</th><th>Válidos</th><th>Bolsonaro</th><th>Lula</th><th>Vantagem Lula</th></tr></thead><tbody>'+R22.slice().reverse().map(r=>`<tr${r.final?' class="final"':''}><td class="num">${r.h}</td><td class="num">${fmtPct(r.pst)}</td><td class="num">${fmtInt(r.vv)}</td><td class="num f">${fmtPct(r.b)}</td><td class="num l">${fmtPct(r.l)}</td><td class="num">${fmtPP(r.l-r.b)}</td></tr>`).join('')+'</tbody></table>';
     $('r1-table').innerHTML = table(R1.map(r=>({...r, fv:r.fv, lv:r.lv})).slice().reverse(), false).replace('<th>Hora</th>','<th>Hora (reportagem)</th>');
   }
   $('copy-csv').addEventListener('click', function(){
@@ -381,7 +410,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       const last=list.length?list[list.length-1]:null;
       const closed=list.find(s=>s.pst>=100);
       const ref=UF1[uf];
-      const f1=fech1[uf]; return {uf,n:ref.n,ref,last,closed,h1:f1?f1.fechou.slice(11,16):null, f:last&&last.tv>0?last.f:null, l:last&&last.tv>0?last.l:null, pst:last?last.pst:0, hora: closed?closed.hg.slice(0,5):null};
+      const f1=fech1[uf]; return {uf,n:ref.n,ref,r22:UF22[uf],last,closed,h1:f1?f1.fechou.slice(11,16):null, f:last&&last.tv>0?last.f:null, l:last&&last.tv>0?last.l:null, pst:last?last.pst:0, hora: closed?closed.hg.slice(0,5):null};
     });
   }
   function drawUF(){
@@ -391,10 +420,11 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       if(mode==='h1') return (a.h1||'99:99').localeCompare(b.h1||'99:99');
       if(mode==='pst') return b.pst-a.pst||a.uf.localeCompare(b.uf);
       if(mode==='f') return (b.f??-1)-(a.f??-1);
+      if(mode==='d22') return Math.abs((b.f??b.r22.b)-b.r22.b)-Math.abs((a.f??a.r22.b)-a.r22.b);
       if(mode==='delta') return Math.abs((b.f??b.ref.f)-b.ref.f)-Math.abs((a.f??a.ref.f)-a.ref.f);
       return (a.hora||'99:99').localeCompare(b.hora||'99:99')||b.pst-a.pst||a.uf.localeCompare(b.uf);
     });
-    $('uf-body').innerHTML='<table><thead><tr><th>UF</th><th>Fechou às</th><th>Fechou no 1º</th><th>Seções</th><th>Flávio</th><th>Lula</th><th>Vantagem</th><th>1º turno (F / L)</th><th>Δ Flávio</th><th>Δ Lula</th><th>Válidos</th></tr></thead><tbody>'+
+    $('uf-body').innerHTML='<table><thead><tr><th>UF</th><th>Fechou às</th><th>Fechou no 1º</th><th>Seções</th><th>Flávio</th><th>Lula</th><th>Vantagem</th><th>1º turno (F / L)</th><th>Δ Flávio</th><th>Δ Lula</th><th>2022 (B / L)</th><th>Flávio vs Bolsonaro 22</th><th>Válidos</th></tr></thead><tbody>'+
       rows.map(r=>{
         const lead=r.f!=null?r.f-r.l:null, lf=r.f!=null?fmtPP(r.f-r.ref.f):'—', ll=r.l!=null?fmtPP(r.l-r.ref.l):'—';
         const winner=r.f!=null?(r.f>r.l?'flavio':'lula'):'';
@@ -403,6 +433,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
           `<td class="num ${winner==='flavio'?'flavio':''}">${r.f!=null?fmtPct(r.f):'—'}</td><td class="num ${winner==='lula'?'lula':''}">${r.l!=null?fmtPct(r.l):'—'}</td>`+
           `<td class="num">${lead!=null?fmtPP(lead):'—'}</td><td class="num c">${fmtPct(r.ref.f,1)} / ${fmtPct(r.ref.l,1)}</td>`+
           `<td class="num ${r.f!=null?(r.f-r.ref.f>=0?'delta up':'delta down'):''}">${lf}</td><td class="num ${r.l!=null?(r.l-r.ref.l>=0?'delta up':'delta down'):''}">${ll}</td>`+
+          `<td class="num c">${fmtPct(r.r22.b,1)} / ${fmtPct(r.r22.l,1)}</td><td class="num ${r.f!=null?(r.f-r.r22.b>=0?'delta up':'delta down'):''}">${r.f!=null?fmtPP(r.f-r.r22.b):'—'}</td>`+
           `<td class="num">${r.last&&r.last.tv>0?fmtInt(r.last.vv):'—'}</td></tr>`;
       }).join('')+'</tbody></table>';
   }
