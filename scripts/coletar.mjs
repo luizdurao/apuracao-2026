@@ -21,7 +21,7 @@ function flat(j) {
 }
 
 async function fetchJSON(url) {
-  const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (apuracao-2026 coletor)', 'cache-control': 'no-cache' } });
+  const r = await fetch(url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(), { headers: { 'user-agent': 'Mozilla/5.0 (apuracao-2026 coletor)', 'cache-control': 'no-cache' } });
   if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
   return r.json();
 }
