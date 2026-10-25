@@ -108,6 +108,30 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
 .uf-table .mini i{display:block;height:100%;background:var(--flavio)}
 .uf-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .uf-head select{font:inherit;font-size:13px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+
+.maps{display:grid;gap:12px}
+.map-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.map-tabs button{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--fg);cursor:pointer}
+.map-tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.map-tabs button:focus-visible{outline:2px solid var(--flavio);outline-offset:2px}
+.map-wrap{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+@media (min-width:760px){.map-wrap{grid-template-columns:minmax(0,1fr) 260px}}
+.map{position:relative;width:100%;max-width:640px;margin:0 auto}
+.map svg{width:100%;height:auto;display:block}
+.map path{stroke:var(--surface);stroke-width:1.5;stroke-linejoin:round;transition:fill .3s;cursor:pointer}
+.map path:hover,.map path.hl{stroke:var(--fg);stroke-width:2}
+.map text{font-family:var(--mono);font-size:22px;fill:var(--fg);pointer-events:none;text-anchor:middle;font-weight:500;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.map .tip{position:absolute;pointer-events:none;display:none;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.14);min-width:180px;z-index:2}
+.map .tip b{font-family:var(--display);font-size:13px}
+.map-side{display:grid;gap:10px;font-size:13px}
+.scale{display:grid;gap:4px}
+.scale .bar{height:12px;border-radius:3px;background:linear-gradient(90deg,var(--lula),var(--grid),var(--flavio))}
+.scale .lbl{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+.map-list{display:grid;gap:3px;max-height:360px;overflow:auto;font-size:12px}
+.map-list div{display:flex;justify-content:space-between;gap:8px;padding:2px 4px;border-radius:4px}
+.map-list div:hover{background:var(--grid)}
+.map-list .num{color:var(--muted)}
+.map-foot{font-size:12px;color:var(--muted)}
 </style>
 
 </head>
@@ -172,6 +196,25 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="chart-head"><h2>Votos válidos apurados (milhões)</h2>
         <div class="legend"><span><i></i>2º turno</span><span><i class="dash"></i>1º turno</span></div></div>
       <div class="plot" id="chart-votes"></div>
+    </div>
+  </section>
+
+  <section class="card maps" aria-label="Mapas">
+    <div class="chart-head"><h2 id="map-title">Mapa por estado</h2>
+      <div class="map-tabs" role="group" aria-label="Escolha do mapa">
+        <button type="button" data-map="r2" aria-pressed="true">2º turno (ao vivo)</button>
+        <button type="button" data-map="d1" aria-pressed="false">Variação vs 1º turno</button>
+        <button type="button" data-map="r1" aria-pressed="false">1º turno</button>
+        <button type="button" data-map="r22" aria-pressed="false">2022</button>
+        <button type="button" data-map="pst" aria-pressed="false">% apurado</button>
+      </div></div>
+    <div class="map-wrap">
+      <div class="map" id="map"><div class="empty">Carregando o mapa…</div></div>
+      <div class="map-side">
+        <div class="scale" id="map-scale"><div class="lbl"><span id="sc-l">Lula +20</span><span id="sc-m">empate</span><span id="sc-r">Flávio +20</span></div><div class="bar" id="sc-bar"></div></div>
+        <div class="map-foot" id="map-foot"></div>
+        <div class="map-list" id="map-list"></div>
+      </div>
     </div>
   </section>
 
@@ -431,7 +474,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       const f1=fech1[uf]; const hh=t=>t?(t.slice(8,10)==='04'?'':'+1 ')+t.slice(11,16):null; return {uf,n:ref.n,ref,r22:UF22[uf],last,closed,h1:f1?hh(f1.fechou):null,h99:f1?hh(f1.p99):null, f:last&&last.tv>0?last.f:null, l:last&&last.tv>0?last.l:null, pst:last?last.pst:0, hora: closed?closed.hg.slice(0,5):null};
     });
   }
-  function drawUF(){
+  let drawUF=function(){
     const rows=ufRows(); const mode=$('uf-sort').value;
     rows.sort((a,b)=>{
       if(mode==='uf') return a.uf.localeCompare(b.uf);
@@ -456,6 +499,64 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       }).join('')+'</tbody></table>';
   }
   $('uf-sort').addEventListener('change',drawUF);
+  const _drawUF=drawUF; drawUF=function(){ _drawUF(); try{drawMap();}catch(e){} };
+
+
+  // ---------- mapas ----------
+  let GEO=null, mapMode='r2';
+  const MAP_DEF={
+    r2:{t:'2º turno — vantagem em p.p. dos válidos (ao vivo)',foot:'Cor = quem lidera e por quanto; estados sem urnas apuradas ficam em cinza. Transparência indica estados ainda com pouca apuração.'},
+    d1:{t:'Variação do Flávio vs 1º turno (p.p.)',foot:'Azul = Flávio cresceu em relação ao 1º turno; vermelho = caiu. Comparação justa: no 1º turno havia mais candidatos.'},
+    r1:{t:'1º turno (04/10/2026) — vantagem Flávio − Lula',foot:'Resultado final do TSE por UF, % dos válidos.'},
+    r22:{t:'2022 (2º turno, 30/10/2022) — vantagem Bolsonaro − Lula',foot:'Resultado final do TSE por UF, % dos válidos.'},
+    pst:{t:'% de seções apuradas no 2º turno',foot:'Escala de cinza: claro = pouco apurado, escuro = 100%.'}
+  };
+  function mapColor(v, max){ // diverging: Lula (−) ↔ Flávio (+), com cinza no meio
+    if(v==null) return 'var(--grid)';
+    const t=Math.max(-1,Math.min(1,v/max)), a=Math.abs(t);
+    const col = t>=0 ? getComputedStyle(document.documentElement).getPropertyValue('--flavio').trim() : getComputedStyle(document.documentElement).getPropertyValue('--lula').trim();
+    const grid = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+    return mix(grid, col, 0.15+0.85*a);
+  }
+  function mix(c1,c2,t){ const p=c=>{c=c.replace('#','');return [0,2,4].map(i=>parseInt(c.slice(i,i+2),16));}; const a=p(c1),b=p(c2); return '#'+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
+  function mapValue(uf, row){
+    if(mapMode==='r2') return row.f!=null ? row.f-row.l : null;
+    if(mapMode==='d1') return row.f!=null ? row.f-row.ref.f : null;
+    if(mapMode==='r1') return row.ref.f-row.ref.l;
+    if(mapMode==='r22') return row.r22.b-row.r22.l;
+    if(mapMode==='pst') return row.pst;
+    return null;
+  }
+  function drawMap(){
+    const host=$('map'); if(!GEO) return;
+    const rows=Object.fromEntries(ufRows().map(r=>[r.uf,r]));
+    const def=MAP_DEF[mapMode]; $('map-title').textContent=def.t; $('map-foot').textContent=def.foot;
+    const max = mapMode==='pst'?100 : mapMode==='d1'?10 : 40;
+    const sc=$('map-scale');
+    if(mapMode==='pst'){ $('sc-l').textContent='0%'; $('sc-m').textContent='50%'; $('sc-r').textContent='100%'; $('sc-bar').style.background='linear-gradient(90deg,var(--grid),var(--fg))'; }
+    else { const nm = mapMode==='r22'?['Lula','Bolsonaro']:mapMode==='d1'?['caiu','cresceu']:['Lula','Flávio']; $('sc-l').textContent=`${nm[0]} +${max}`; $('sc-m').textContent=mapMode==='d1'?'igual':'empate'; $('sc-r').textContent=`${nm[1]} +${max}`; $('sc-bar').style.background='linear-gradient(90deg,var(--lula),var(--grid),var(--flavio))'; }
+    let svg=host.querySelector('svg');
+    if(!svg){
+      host.innerHTML=`<svg viewBox="0 0 1000 ${GEO.h}" role="img" aria-label="Mapa do Brasil por estado"><g id="map-paths"></g><g id="map-labels"></g></svg><div class="tip" id="map-tip"></div>`;
+      svg=host.querySelector('svg');
+      const ns='http://www.w3.org/2000/svg';
+      Object.keys(GEO.paths).forEach(uf=>{ const p=document.createElementNS(ns,'path'); p.setAttribute('d',GEO.paths[uf]); p.dataset.uf=uf; svg.querySelector('#map-paths').appendChild(p);
+        const t=document.createElementNS(ns,'text'); t.setAttribute('x',GEO.cent[uf][0]); t.setAttribute('y',GEO.cent[uf][1]+8); t.textContent=uf; svg.querySelector('#map-labels').appendChild(t); });
+      const tip=$('map-tip');
+      svg.addEventListener('pointermove',ev=>{ const p=ev.target.closest('path'); if(!p){tip.style.display='none';return;} const r=rows[p.dataset.uf]; if(!r) return;
+        tip.innerHTML=`<b>${r.uf} · ${r.n}</b><br>`+(r.f!=null?`2º turno: Flávio ${fmtPct(r.f)} · Lula ${fmtPct(r.l)} · ${fmtPct(r.pst,1)} apurado${r.hora?' · fechou '+r.hora:''}<br>`:`2º turno: ${r.pst>0?fmtPct(r.pst,1)+' apurado':'sem urnas apuradas'}<br>`)+
+          `1º turno: Flávio ${fmtPct(r.ref.f)} · Lula ${fmtPct(r.ref.l)}${r.h99?' · 99% às '+r.h99:''}<br>2022: Bolsonaro ${fmtPct(r.r22.b)} · Lula ${fmtPct(r.r22.l)}`;
+        tip.style.display='block'; const hb=host.getBoundingClientRect(); let x=ev.clientX-hb.left+12, y=ev.clientY-hb.top+12; if(x+tip.offsetWidth>hb.width) x=ev.clientX-hb.left-tip.offsetWidth-12; tip.style.left=x+'px'; tip.style.top=y+'px'; });
+      svg.addEventListener('pointerleave',()=>{tip.style.display='none';});
+    }
+    svg.querySelectorAll('path').forEach(p=>{ const r=rows[p.dataset.uf]; const v=r?mapValue(p.dataset.uf,r):null;
+      if(mapMode==='pst'){ p.style.fill = v==null?'var(--grid)':mix(getComputedStyle(document.documentElement).getPropertyValue('--grid').trim(),getComputedStyle(document.documentElement).getPropertyValue('--fg').trim(),Math.min(1,v/100)); p.style.opacity=1; }
+      else { p.style.fill=mapColor(v,max); p.style.opacity = (mapMode==='r2'||mapMode==='d1') && r && r.pst<30 && v!=null ? 0.45+0.55*(r.pst/30) : 1; } });
+    // lista lateral ordenada pelo valor
+    const list=Object.values(rows).filter(r=>r.uf!=='ZZ').map(r=>({r,v:mapValue(r.uf,r)})).sort((a,b)=>(b.v??-1e9)-(a.v??-1e9));
+    $('map-list').innerHTML=list.map(({r,v})=>`<div><span><b>${r.uf}</b> ${r.n}</span><span class="num">${v==null?'—':mapMode==='pst'?fmtPct(v,1):fmtPP(v)}</span></div>`).join('');
+  }
+  document.querySelectorAll('.map-tabs button').forEach(b=>b.addEventListener('click',()=>{ mapMode=b.dataset.map; document.querySelectorAll('.map-tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b)); drawMap(); }));
 
   // ---------- fonte de dados: TSE ao vivo + histórico gravado pela Action ----------
   const TSE='https://resultados.tse.jus.br/oficial/ele2026/6258/dados/';
@@ -494,6 +595,7 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     try{ const f=await getJSON('data/fechamento-1t.json'); if(f&&typeof f==='object') fech1=f; }catch(e){}
     try{ S1=await getJSON('data/serie-1t.json'); if(S1&&S1.ufs) Object.keys(S1.ufs).forEach(u=>{ if(!fech1[u]) fech1[u]=S1.ufs[u]; }); }catch(e){}
     try{ S22=await getJSON('data/serie-2022.json'); }catch(e){}
+    try{ GEO=await getJSON('data/br-ufs.json'); }catch(e){ $('map').innerHTML='<div class="empty">Mapa indisponível.</div>'; }
     if(S1||S22) $('fonte-series').textContent = 'As curvas do 1º turno e de 2022 foram reconstruídas minuto a minuto a partir do boletim de urna aberto do TSE (hora em que cada urna foi recebida pela totalização), com percentuais sobre os votos válidos já recebidos. ';
     // exterior entra na tabela por estado a partir do próprio ZZ
     ufHist.zz=[...byIdZZ.values()];
