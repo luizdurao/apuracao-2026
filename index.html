@@ -175,16 +175,16 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
       <div class="kpi"><span class="v num" id="k-bn">—</span><span class="l">brancos + nulos</span></div>
     </div>
     <div class="proj" id="proj">
-      <div class="proj-head"><span class="eyebrow">Projeção · pela trajetória do 1º turno</span><span class="note" id="proj-meta"></span></div>
+      <div class="proj-head"><span class="eyebrow">Projeção · método Apuração Aberta (município a município)</span><span class="note" id="proj-meta"></span></div>
       <div class="proj-grid">
         <div class="kpi"><span class="v num" id="pj-falta">—</span><span class="l">seções que faltam <span class="num" id="pj-falta-n"></span></span></div>
         <div class="kpi"><span class="v num" id="pj-votos">—</span><span class="l">votos válidos ainda por apurar (estimativa)</span></div>
-        <div class="kpi"><span class="v num" id="pj-f">—</span><span class="l">Flávio · projeção final (trajetória do 1º turno)</span></div>
-        <div class="kpi"><span class="v num" id="pj-l">—</span><span class="l">Lula · projeção final (trajetória do 1º turno)</span></div>
-        <div class="kpi"><span class="v num" id="pj-uf">—</span><span class="l">projeção estado a estado (Flávio / Lula)</span></div>
+        <div class="kpi"><span class="v num" id="pj-f">—</span><span class="l">Flávio · projeção final</span></div>
+        <div class="kpi"><span class="v num" id="pj-l">—</span><span class="l">Lula · projeção final</span></div>
+        <div class="kpi"><span class="v num" id="pj-traj">—</span><span class="l">outras: trajetória do 1º turno · estado a estado (Flávio)</span></div>
         <div class="kpi"><span class="v num" id="pj-need">—</span><span class="l" id="pj-need-l">para virar, precisa dos votos restantes</span></div>
       </div>
-      <p class="note" id="proj-note">Projeção principal: no 1º turno, com a mesma fração de seções apuradas de agora, o Flávio tinha um percentual que depois mudou até o resultado final (as urnas chegam na mesma ordem geográfica); aplica-se a mesma correção à parcial de hoje, na base de dois candidatos. A projeção estado a estado usa a variação observada em cada UF em relação ao 1º turno, ponderada pelo eleitorado. São estimativas estatísticas, não resultados.</p>
+      <p class="note" id="proj-note">Método da <a href="https://apuracaoaberta.com.br/">Apuração Aberta</a>, aplicado por município: cada município já apurado é comparado com ele mesmo no 1º turno — quanto mudou o comparecimento e para onde foram os votos dos outros candidatos — por estado, separando capital e interior; esses padrões são aplicados aos votos que ainda faltam em cada município, partindo do resultado do 1º turno de cada um. As duas projeções alternativas (trajetória do 1º turno e estado a estado) ficam como comparação. São estimativas estatísticas, não resultados.</p>
     </div>
   </section>
 
@@ -415,6 +415,35 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     $('k-bn').textContent = L? fmtInt(L.vb+L.vn)+' ('+fmtPct((L.vb+L.vn)/L.tv*100,1)+')' : '—';
     renderAviso(L); renderProj(L); renderZZ(); drawCharts(); drawTables();
   }
+
+  // ---------- projeção "Apuração Aberta" (município a município, estratos UF × capital/interior) ----------
+  const CAPITAIS = new Set(['RIO BRANCO','MACEIÓ','MANAUS','MACAPÁ','SALVADOR','FORTALEZA','BRASÍLIA','VITÓRIA','GOIÂNIA','SÃO LUÍS','BELO HORIZONTE','CAMPO GRANDE','CUIABÁ','BELÉM','JOÃO PESSOA','RECIFE','TERESINA','CURITIBA','RIO DE JANEIRO','NATAL','PORTO VELHO','BOA VISTA','PORTO ALEGRE','FLORIANÓPOLIS','ARACAJU','SÃO PAULO','PALMAS']);
+  let MUN1=null, MUN2=null;
+  function projecaoMunicipal(){
+    if(!MUN1||!MUN2||!MUN2.m) return null;
+    // 1) padrões por estrato nos municípios já apurados: razão de comparecimento e variação da participação de Flávio (base 2 candidatos)
+    const est={};
+    const strat=(m1)=>m1.uf+(CAPITAIS.has(m1.nm)?'-C':'-I');
+    for(const cd in MUN2.m){ const m1=MUN1[cd]; if(!m1||!m1.sec) continue; const [st,ts,tv,vv,f,l]=MUN2.m[cd]; if(!st||!(f+l)) continue;
+      const frac=Math.min(1,st/(ts||m1.sec)); const k=strat(m1); const e=est[k]||(est[k]={tv2:0,tv1:0,f2:0,l2:0,f1:0,l1:0,w:0});
+      e.tv2+=tv; e.tv1+=frac*m1.comp; e.f2+=f; e.l2+=l; e.f1+=frac*m1.f; e.l1+=frac*m1.l; e.w+=frac*m1.comp; }
+    const nac={tv2:0,tv1:0,f2:0,l2:0,f1:0,l1:0};
+    for(const k in est){ const e=est[k]; for(const q in nac) nac[q]+=e[q]; }
+    const padrao=(e)=>({ t: e.tv1>0? e.tv2/e.tv1 : 1, d: (e.f2+e.l2>0&&e.f1+e.l1>0) ? e.f2/(e.f2+e.l2)*100 - e.f1/(e.f1+e.l1)*100 : 0, w:e.w });
+    const pNac = padrao(nac);
+    // 2) aplica aos votos que faltam, município a município (estrato com pouca base mistura com o padrão nacional)
+    let F=0,L=0,contF=0,contL=0,faltaVV=0, nMun=0, nAp=0;
+    for(const cd in MUN1){ const m1=MUN1[cd]; if(m1.uf==='ZZ'||!m1.sec) continue; nMun++;
+      const r=MUN2.m[cd]||[0,m1.sec,0,0,0,0]; const [st,ts,tv,vv,f,l]=r; const frac=Math.min(1,st/(ts||m1.sec)); if(st>0) nAp++;
+      const e=est[strat(m1)]; let pe=pNac; if(e){ const pp=padrao(e); const a=Math.min(1,e.w/50000); pe={t:a*pp.t+(1-a)*pNac.t, d:a*pp.d+(1-a)*pNac.d}; }
+      const base2=m1.f+m1.l; const share1=base2>0? m1.f/base2*100 : 50;
+      const restante=(1-frac)*base2*pe.t;                     // votos dos dois candidatos ainda por apurar (com a mudança de comparecimento)
+      const share=Math.max(0,Math.min(100,share1+pe.d));
+      contF+=f; contL+=l; F+=f+restante*share/100; L+=l+restante*(100-share)/100; faltaVV+=restante; }
+    const tot=F+L; if(!tot) return null;
+    return {f:F/tot*100,l:L/tot*100,faltaVV,nMun,nAp,estratos:Object.keys(est).length,drift:pNac.d,turnout:pNac.t,hg:MUN2.hg};
+  }
+
   function trajetoria1t(pst){ // ponto do 1º turno com a fração de seções mais próxima (série do boletim de urna; senão, parciais de jornal)
     const finalF2p = R1_FINAL.fv/(R1_FINAL.fv+R1_FINAL.lv)*100;
     let pts;
@@ -447,12 +476,14 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     if(fProj==null || swAvg==null) set('pj-uf','—'); else set('pj-uf',`${fmtPct(fProj,1)} / ${fmtPct(100-fProj,1)}`);
     // projeção pela trajetória do 1º turno: mesma fração de seções apuradas → correção observada até o final
     const traj = trajetoria1t(L.pst);
-    if(traj && L.pst>=0.5){
-      const f2p = L.fv+L.lv>0 ? L.fv/(L.fv+L.lv)*100 : L.f;        // base dois candidatos (no 2º turno = % dos válidos)
-      const proj = Math.max(0,Math.min(100, f2p + traj.drift));
-      set('pj-f',fmtPct(proj)); set('pj-l',fmtPct(100-proj));
-      set('proj-meta',`no 1º turno, com ${fmtPct(traj.pst,1)} apurado, Flávio tinha ${fmtPct(traj.f2p,1)} (base 2 candidatos) e fechou em ${fmtPct(traj.final,1)}: correção de ${fmtPP(traj.drift)}`);
-    } else { set('pj-f','—'); set('pj-l','—'); set('proj-meta','projeção disponível a partir de 0,5% apurado'); }
+    let projTraj=null;
+    if(traj && L.pst>=0.5){ const f2p = L.fv+L.lv>0 ? L.fv/(L.fv+L.lv)*100 : L.f; projTraj = Math.max(0,Math.min(100, f2p + traj.drift)); }
+    set('pj-traj', `${projTraj!=null?fmtPct(projTraj,1):'—'} · ${fProj!=null?fmtPct(fProj,1):'—'}`);
+    const pm = projecaoMunicipal();
+    if(pm){ set('pj-f',fmtPct(pm.f)); set('pj-l',fmtPct(pm.l));
+      set('proj-meta',`${fmtInt(pm.nAp)} de ${fmtInt(pm.nMun)} municípios com apuração (dados de ${pm.hg||'—'}) · ${pm.estratos} estratos · comparecimento ${(pm.turnout*100).toFixed(1)}% do 1º turno · Flávio ${fmtPP(pm.drift)} vs 1º turno nos mesmos municípios (base 2 candidatos)`); }
+    else if(projTraj!=null){ set('pj-f',fmtPct(projTraj)); set('pj-l',fmtPct(100-projTraj)); set('proj-meta','dados por município ainda não disponíveis — mostrando a projeção pela trajetória do 1º turno'); }
+    else { set('pj-f','—'); set('pj-l','—'); set('proj-meta','projeção disponível a partir de 0,5% apurado'); }
     // quanto o que está atrás precisa dos votos restantes para empatar
     const lead = L.fv-L.lv; const atras = lead>0?'Lula':'Flávio';
     if(restantes>0){ const need=(Math.abs(lead)+restantes)/2/restantes*100; set('pj-need', need>100?'impossível':fmtPct(need,1)); $('pj-need-l').textContent=`${atras} precisa deste % dos votos restantes para empatar`; }
@@ -716,6 +747,8 @@ button.ghost:focus-visible,summary:focus-visible{outline:2px solid var(--flavio)
     try{ const f=await getJSON('data/fechamento-1t.json'); if(f&&typeof f==='object') fech1=f; }catch(e){}
     try{ S1=await getJSON('data/serie-1t.json'); if(S1&&S1.ufs) Object.keys(S1.ufs).forEach(u=>{ if(!fech1[u]) fech1[u]=S1.ufs[u]; }); }catch(e){}
     try{ S22=await getJSON('data/serie-2022.json'); }catch(e){}
+    try{ if(!MUN1) MUN1=await getJSON('data/mun-1t.json'); }catch(e){}
+    try{ MUN2=await getJSON('data/mun-2t.json?t='+Date.now()); }catch(e){}
     try{ GEO=await getJSON('data/br-ufs.json'); }catch(e){ $('map').innerHTML='<div class="empty">Mapa indisponível.</div>'; }
     if(S1||S22) $('fonte-series').textContent = 'As curvas do 1º turno e de 2022 foram reconstruídas minuto a minuto a partir do boletim de urna aberto do TSE (hora em que cada urna foi recebida pela totalização), com percentuais sobre os votos válidos já recebidos. ';
     // exterior entra na tabela por estado a partir do próprio ZZ
