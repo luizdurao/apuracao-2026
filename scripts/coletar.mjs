@@ -28,18 +28,20 @@ async function fetchJSON(url) {
 
 await mkdir('data', { recursive: true });
 let mudou = false;
+const status = { quando: new Date().toISOString(), br: null, zz: null, erros: [] };
 for (const f of FONTES) {
   let hist = [];
   try { hist = JSON.parse(await readFile(f.arquivo, 'utf8')); } catch { /* primeiro run */ }
   try {
     const snap = flat(await fetchJSON(`${BASE}${f.uf}/${f.uf}-c0001-e00${ELE}-u.json`));
+    status[f.uf] = { dg: snap.dg, hg: snap.hg, pst: snap.pst };
     if (!hist.some(h => h.order === snap.order)) {
       hist.push(snap); hist.sort((a, b) => a.order.localeCompare(b.order));
       await writeFile(f.arquivo, JSON.stringify(hist, null, 1));
       mudou = true;
       console.log(`${f.uf}: parcial ${snap.hg} gravada (${snap.pst}% das seções)`);
     } else console.log(`${f.uf}: sem parcial nova (${snap.hg})`);
-  } catch (e) { console.error(`${f.uf}: falha na coleta: ${e.message}`); }
+  } catch (e) { console.error(`${f.uf}: falha na coleta: ${e.message}`); status.erros.push(`${f.uf}: ${e.message}`); }
 }
 // Estados: um snapshot por UF por parcial, tudo em data/historico-uf.json ({uf: [snapshots]}).
 // Para não inflar o arquivo, cada UF guarda só a parcial mais recente de cada percentual de seções distinto
@@ -61,5 +63,6 @@ for (const f of FONTES) {
   }
   if (m) { await writeFile(arq, JSON.stringify(hist)); mudou = true; console.log('uf: histórico atualizado'); }
 }
+await writeFile('data/coleta-status.json', JSON.stringify(status, null, 1));
 process.exitCode = 0;
 if (mudou) console.log('CHANGED=1');
