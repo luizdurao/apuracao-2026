@@ -1,5 +1,5 @@
 {
- "quando": "2026-10-26T02:43:06.463Z",
+ "quando": "2026-10-26T08:08:31.738Z",
  "br": {
   "dg": "25/10/2026",
   "hg": "23:27:02",
@@ -10,12 +10,8 @@
   "hg": "23:26:57",
   "pst": 100
  },
- "erros": [],
- "odds": {
-  "t": "2026-10-26T02:43:07.190Z",
-  "flavio": 0.05,
-  "flavio_last": 0.1,
-  "lula": 99.95,
-  "lula_last": 99.9
- }
+ "erros": [
+  "odds flavio: Cannot read properties of undefined (reading 'outcomePrices')",
+  "odds lula: Cannot read properties of undefined (reading 'outcomePrices')"
+ ]
 }
